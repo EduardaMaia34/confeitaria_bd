@@ -1,0 +1,15 @@
+<!-- confeitaria/templates/confeitaria/formulario.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Criar Produto</title>
+</head>
+<body>
+    <h1>Cadastrar Produto</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Salvar</button>
+    </form>
+</body>
+</html>
