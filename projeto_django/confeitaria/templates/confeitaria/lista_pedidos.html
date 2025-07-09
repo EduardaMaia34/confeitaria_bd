@@ -1,11 +1,14 @@
 <h2>Pedidos</h2>
 <ul>
-  {% for pedido in pedidos %}
-    <li>{{ pedido }}</li>
-    <ul>
-      {% for pp in pedido.pedidoproduto_set.all %}
-        <li>{{ pp }}</li>
-      {% endfor %}
-    </ul>
-  {% endfor %}
+{% for pedido in pedidos %}
+    <li>
+        Cliente: {{ pedido.cliente.nome }} - Data: {{ pedido.data_pedido|date:"d/m/Y H:i" }}
+        <ul>
+            {% for item in pedido.pedidoproduto_set.all %}
+                <li>{{ item.id_produto.nome }} - Quantidade: {{ item.quantidade }}</li>
+            {% endfor %}
+        </ul>
+    </li>
+{% endfor %}
 </ul>
+
