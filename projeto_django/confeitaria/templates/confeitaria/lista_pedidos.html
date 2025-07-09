@@ -1,0 +1,11 @@
+<h2>Pedidos</h2>
+<ul>
+  {% for pedido in pedidos %}
+    <li>{{ pedido }}</li>
+    <ul>
+      {% for pp in pedido.pedidoproduto_set.all %}
+        <li>{{ pp }}</li>
+      {% endfor %}
+    </ul>
+  {% endfor %}
+</ul>

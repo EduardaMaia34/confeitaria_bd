@@ -2,10 +2,11 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Cadastrar Pedido</title>
+    <title>Adicionar Produto ao Pedido</title>
 </head>
 <body>
-    <h1>Cadastrar Novo Pedido</h1>
+    <h1>Adicionar Produto ao Pedido #{{ pedido.id }}</h1>
+    <p><strong>Cliente:</strong> {{ pedido.cliente.nome }}</p>
 
     {% if form.errors %}
         <ul class="errorlist">
@@ -21,7 +22,10 @@
         {% csrf_token %}
         {{ form.as_p }}
 
-        <button type="submit">Criar Pedido</button>
+        <button type="submit">Adicionar Produto</button>
     </form>
+
+    <br>
+    <a href="{% url 'adicionar_produto_ao_pedido' pedido.id %}">Voltar para o Pedido</a>
 </body>
 </html>
