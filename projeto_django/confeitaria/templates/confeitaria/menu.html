@@ -1,13 +1,87 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-    <title>Menu</title>
+    <meta charset="UTF-8">
+    <title>Menu - Petit Rose</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fcb1b0;
+            font-family: 'Abhaya Libre', serif;
+            color: #6e0707;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .border-externa {
+            border: 5px solid #ffffe3; /* Borda externa clara */
+            padding: 5px;               /* Espaço para a borda interna */
+            border-radius: 25px;
+        }
+
+        .container {
+            background-color: #ffffe3;
+            border: 5px solid #ffffe3; /* Borda interna rosada */
+            border-radius: 20px;
+            padding: 15px 60px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background-color: #fcb1b0;
+            color: #6e0707;
+            border: none;
+            border-radius: 15px;
+            padding: 12px 30px;
+            margin: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #fca0a0;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Menu</h1>
-    <button onclick="location.href='{% url 'criar_produto' %}'">Criar Produto</button>
-    <button onclick="location.href='{% url 'criar_cliente' %}'">Criar Cliente</button>
-    <button onclick="location.href='{% url 'criar_pedido' %}'">Criar Pedido</button>
+    <div class="border-externa">
+        <div class="container">
+            <img src= "../../static/confeitaria/imagens/Logo.png" class="logo">
 
+            <h1>BEM-VINDO(A) AO PETIT ROSE</h1>
+
+            <button class="btn" onclick="location.href='{% url 'criar_produto' %}'">Produtos</button>
+            <button class="btn" onclick="location.href='{% url 'criar_pedido' %}'">Pedidos</button>
+            <button class="btn" onclick="location.href='{% url 'criar_cliente' %}'">Clientes</button>
+
+            <div class="footer">
+                Feito com amor e açúcar 🍰
+            </div>
+        </div>
+    </div>
 </body>
 </html>
