@@ -1,6 +1,6 @@
 # confeitaria/forms.py
 from django import forms
-from .models import Produto, Cliente, Pedido, PedidoProduto
+from .models import Produto, Cliente, Pedido, PedidoProduto, Usuario
 
 class ProdutoForm(forms.ModelForm):
     class Meta:
@@ -32,3 +32,9 @@ class PedidoProdutoForm(forms.ModelForm):
     
     def __str__(self):
         return f"{self.produto.nome} (Qtd: {self.quantidade})"
+    
+class UsuarioForm(forms.ModelForm):
+    class Meta:
+        model = Usuario
+        fields = ['usuario', 'senha']
+        

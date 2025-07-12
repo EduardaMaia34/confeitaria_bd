@@ -78,7 +78,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'confeitaria_bd',
         'USER': 'postgres',
-        'PASSWORD': 'postgres',
+        'PASSWORD': 'mila0811',
         'HOST': 'localhost'
     }
 }
