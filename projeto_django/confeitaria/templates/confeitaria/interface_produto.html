@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Produtos</title>
+
+</head>
+<body>
+
+    <div class="top-bar">
+        <h2>Produtos</h2>
+        <a href="{% url 'criar_produto' %}" class="btn-novo">👤 Novo Produto</a>
+    </div>
+
+    <form class="form-busca" method="get">
+        <span>🔍</span>
+        <input type="text" name="q" placeholder="Buscar produtos..." value="{{ request.GET.q }}">
+    </form>
+
+    <div class="produtos-grid">
+        {% for produto in produtos %}
+        <div class="card">
+            <strong>{{ produto.nome }}</strong><br>
+
+            <!-- Botão Editar -->
+            <a href="{% url 'editar_produto' produto.id %}" class="btn btn-edit">✏️</a>
+
+            <!-- Botão Excluir (POST) -->
+            <form action="{% url 'deletar_produto' produto.id %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-del" onclick="return confirm('Excluir {{ produto.nome }}?');">🗑</button>
+            </form>
+        </div>
+        {% empty %}
+        <p>Nenhum produto encontrado.</p>
+        {% endfor %}
+    </div>
+
+</body>
+</html>
