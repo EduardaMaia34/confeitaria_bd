@@ -1,21 +1,22 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
+from django.contrib import messages
 from .forms import ProdutoForm, ClienteForm, PedidoForm, PedidoProdutoForm, UsuarioForm
 from .models import Pedido, Cliente, Produto, PedidoProduto, Usuario
 from django.contrib import messages
 from django.contrib.auth import login as django_login, get_user_model
 from django.db import connection
-from django.contrib.auth.hashers import check_password
+
 
 def menu(request):
     return render(request, 'confeitaria/menu.html')
 
 def criar_produto(request):
     if request.method == 'POST':
-        form = ProdutoForm(request.POST)
+        form = ProdutoForm(request.POST, request.FILES)  # Inclui request.FILES para upload de imagens
         if form.is_valid():
             form.save()
-            return redirect('criar_produto')  # ou uma página de sucesso
+            return redirect('listar_produto')  # ou uma página de sucesso
     else:
         form = ProdutoForm()
     return render(request, 'confeitaria/cadastrar_produto.html', {'form': form})
@@ -26,7 +27,7 @@ def criar_cliente(request):
         form = ClienteForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('criar_cliente')  # ou uma página de sucesso
+            return redirect('listar_cliente')  # ou uma página de sucesso
     else:
         form = ClienteForm()
     return render(request, 'confeitaria/cadastrar_cliente.html', {'form': form})
@@ -90,3 +91,69 @@ def autenticar_login(request):
         form = UsuarioForm()
 
     return render(request, "confeitaria/login.html", {"form": form})
+
+def listar_cliente(request):
+    termo = request.GET.get('q', '')
+    if termo:
+        clientes = Cliente.objects.filter(nome__icontains=termo)
+    else:
+        clientes = Cliente.objects.all()
+    
+    return render(request, 'confeitaria/clientes.html', {'clientes': clientes})
+
+def listar_produto(request):
+    termo = request.GET.get('q', '')
+    if termo:
+        produtos = Produto.objects.filter(nome__icontains=termo)
+    else:
+        produtos = Produto.objects.all()
+    
+    return render(request, 'confeitaria/interface_produto.html', {'produtos': produtos})
+
+
+def editar_produto(request, id):
+    produto = get_object_or_404(Produto, id=id)
+
+    if request.method == 'POST':
+        form = ProdutoForm(request.POST, instance=produto)
+        if form.is_valid():
+            form.save()
+            return redirect('listar_produto')  # Redireciona para listagem
+    else:
+        form = ProdutoForm(instance=produto)
+
+    return render(request, 'confeitaria/editar_produto.html', {'form': form, 'produto': produto})
+
+def deletar_produto(request, id):
+    produto = get_object_or_404(Produto, id=id)
+
+    if request.method == "POST":
+        produto.delete()
+        return redirect("listar_produto")          # volta para a lista
+
+    # GET → exibe confirmação
+    return render(request, "confeitaria/deletar_produto.html", {"produto": produto})
+
+
+def editar_cliente(request, id):
+    cliente = get_object_or_404(Cliente, id=id)
+
+    if request.method == 'POST':
+        form = ClienteForm(request.POST, instance=cliente)
+        if form.is_valid():
+            form.save()
+            return redirect('listar_cliente')  # Redireciona para listagem
+    else:
+        form = ClienteForm(instance=cliente)
+
+    return render(request, 'confeitaria/editar_cliente.html', {'form': form, 'cliente': cliente})
+
+def deletar_cliente(request, id):
+    cliente = get_object_or_404(Cliente, id=id)
+
+    if request.method == "POST":
+        cliente.delete()
+        return redirect("listar_cliente")          # volta para a lista
+
+    # GET → exibe confirmação
+    return render(request, "confeitaria/deletar_cliente.html", {"cliente": cliente})

@@ -79,7 +79,8 @@ DATABASES = {
         'NAME': 'confeitaria_bd',
         'USER': 'postgres',
         'PASSWORD': 'mila0811',
-        'HOST': 'localhost'
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
@@ -119,6 +120,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Configurações para arquivos de MÍDIA (uploads de usuários)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media' # Isso criará uma pasta 'media' na raiz do seu projeto
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
