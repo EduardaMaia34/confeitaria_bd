@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', views.autenticar_login, name='autenticar_login'),
@@ -8,6 +10,7 @@ urlpatterns = [
     path('produtos/', views.listar_produto, name='listar_produto'),
     path('produto/cadastro/', views.criar_produto, name='criar_produto'),
     path('produto/<int:id>/editar/', views.editar_produto, name='editar_produto'),
+    path('produtos/editar_modal/<int:id>/', views.editar_produto_modal, name='editar_produto_modal'),
     path('produtos/<int:id>/deletar/', views.deletar_produto,name='deletar_produto'),
     
     path('clientes/', views.listar_cliente, name='listar_cliente'),

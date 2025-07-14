@@ -1,0 +1,71 @@
+<h2>Editar Produto</h2>
+<form method="post" enctype="multipart/form-data" action="{% url 'editar_produto_modal' produto.pk %}">
+    {% csrf_token %}
+    
+    <div class="linha-dupla">
+        <div>
+            <label for="{{ form.nome.id_for_label }}">Nome:</label>
+            {{ form.nome }}
+            {% if form.nome.help_text %}
+                <span class="helptext">{{ form.nome.help_text }}</span>
+            {% endif %}
+            {% if form.nome.errors %}
+                <ul class="errorlist">{% for error in form.nome.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            {% endif %}
+        </div>
+        <div>
+            <label for="{{ form.preco.id_for_label }}">Preço:</label>
+            {{ form.preco }}
+            {% if form.preco.help_text %}
+                <span class="helptext">{{ form.preco.help_text }}</span>
+            {% endif %}
+            {% if form.preco.errors %}
+                <ul class="errorlist">{% for error in form.preco.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="linha-simples">
+        <label for="{{ form.descricao.id_for_label }}">Descrição:</label>
+        {{ form.descricao }}
+        {% if form.descricao.help_text %}
+            <span class="helptext">{{ form.descricao.help_text }}</span>
+        {% endif %}
+        {% if form.descricao.errors %}
+            <ul class="errorlist">{% for error in form.descricao.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+    </div>
+
+    <div class="linha-simples">
+        <label for="{{ form.imagem.id_for_label }}">Imagem:</label>
+        <div class="file-input-wrapper">
+            <label for="{{ form.imagem.id_for_label }}" class="file-input-label">Escolher Arquivo</label>
+            <span id="file-name-display" class="file-input-display">
+                {% if form.instance.imagem %}
+                    {{ form.instance.imagem.name }}
+                {% else %}
+                    Nenhum arquivo escolhido
+                {% endif %}
+            </span>
+            {{ form.imagem }}
+        </div>
+        {% if form.imagem.help_text %}
+            <span class="helptext">{{ form.imagem.help_text }}</span>
+        {% endif %}
+        {% if form.imagem.errors %}
+            <ul class="errorlist">{% for error in form.imagem.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        {% endif %}
+
+        {% if form.instance.imagem %}
+            <div class="current-image-wrapper">
+                <p>Imagem Atual:</p>
+                <img src="{{ form.instance.imagem.url }}" alt="{{ form.instance.nome }}">
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="botoes-form">
+        <button type="submit" class="botao-salvar">Salvar Alterações</button>
+        <a href="#" class="botao-cancelar">Cancelar</a>
+    </div>
+</form>

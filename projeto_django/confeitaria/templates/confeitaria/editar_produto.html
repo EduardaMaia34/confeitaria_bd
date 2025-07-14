@@ -1,16 +1,239 @@
-
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-    <title>Editar Produto</title>
+    <meta charset="UTF-8">
+    <title>Editar Produto - Petit Rose</title>
+
+    <style>
+        body {
+            font-family: 'Georgia', serif;
+            background-color: #fff8e6;
+            color: #710100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 30px auto;
+            padding: 30px 40px;
+            background-color: #fffaf0;
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #600000;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ffd7c9;
+            border-radius: 10px;
+            font-size: 16px;
+            background-color: #fffdf8;
+            box-sizing: border-box;
+            resize: none;
+        }
+
+        .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .file-input-label {
+            background-color: #6e0707;
+            color: #fffdf8;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .file-input-display {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ffd7c9;
+            border-radius: 10px;
+            background-color: #fffdf8;
+            color: #710100;
+            font-size: 16px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            min-width: 150px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .image-clear-options {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            color: #8b0000;
+        }
+
+        .image-clear-options input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+
+        .current-image-wrapper {
+            text-align: center;
+            margin-top: 15px;
+            padding: 15px;
+            border: 1px dashed #ffd7c9;
+            border-radius: 10px;
+            background-color: #fffdf8;
+        }
+
+        .current-image-wrapper p {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .current-image-wrapper img {
+            max-width: 150px;
+            border-radius: 8px;
+            border: 1px solid #fcb1b0;
+        }
+
+        .botao-salvar, .botao-cancelar {
+            border: none;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 0 10px;
+            text-decoration: none;
+        }
+
+        .botao-salvar {
+            background-color: #6e0707;
+            color: #fffdf8;
+        }
+
+        .botao-cancelar {
+            background-color: #fbbfc5;
+            color: #600000;
+        }
+
+        .botoes-form {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        /* REMOVE textos "Currently", "Change", "Clear" default */
+        input[type="file"] + a,
+        input[type="file"] ~ br,
+        input[type="file"] ~ strong,
+        .clearable-file-input label {
+            display: none !important;
+        }
+
+        /* Extra: cor do texto helptext e erros */
+        .helptext {
+            font-size: 0.85em;
+            color: #8b0000;
+            margin-top: 5px;
+        }
+
+        .errorlist {
+            color: #e74c3c;
+            list-style: none;
+            padding-left: 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>Editar Produto</h1>
-    <form method="post">
+
+<div class="container">
+    <h2>Editar Produto</h2>
+
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Salvar Alteracoes</button>
-        <a href="{% url 'listar_produto' %}">Cancelar</a>
+
+        <label for="{{ form.nome.id_for_label }}">Nome:</label>
+        {{ form.nome }}
+
+        <label for="{{ form.preco.id_for_label }}">Preço:</label>
+        {{ form.preco }}
+
+        <label for="{{ form.descricao.id_for_label }}">Descrição:</label>
+        {{ form.descricao }}
+
+        <label for="{{ form.imagem.id_for_label }}">Imagem:</label>
+        <div class="file-input-wrapper">
+            <label for="{{ form.imagem.id_for_label }}" class="file-input-label">Escolher Arquivo</label>
+            <span id="file-name-display" class="file-input-display">Nenhum arquivo escolhido</span>
+            {{ form.imagem }}
+        </div>
+
+        {% if form.imagem.url %}
+            <div class="image-clear-options">
+                {{ form.imagem.clear_field }}
+                <label for="{{ form.imagem.clear_field.id_for_label }}">Remover imagem atual</label>
+            </div>
+        {% endif %}
+
+        {% if form.instance.imagem %}
+            <div class="current-image-wrapper">
+                <p>Imagem Atual:</p>
+                <img src="{{ form.instance.imagem.url }}" alt="{{ form.instance.nome }}">
+            </div>
+        {% endif %}
+
+        <div class="botoes-form">
+            <button type="submit" class="botao-salvar">Salvar Alterações</button>
+            <a href="{% url 'listar_produto' %}" class="botao-cancelar">Cancelar</a>
+        </div>
     </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fileInput = document.getElementById('{{ form.imagem.id_for_label }}');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const clearCheckbox = document.getElementById('{{ form.imagem.clear_field.id_for_label }}');
+
+        function updateFileName() {
+            if (fileInput.files.length > 0) {
+                fileNameDisplay.textContent = fileInput.files[0].name;
+            } else if (clearCheckbox && clearCheckbox.checked) {
+                fileNameDisplay.textContent = 'Imagem será removida';
+            } else {
+                const img = document.querySelector('.current-image-wrapper img');
+                fileNameDisplay.textContent = img ? img.src.split('/').pop() : 'Nenhum arquivo escolhido';
+            }
+        }
+
+        if (fileInput) fileInput.addEventListener('change', updateFileName);
+        if (clearCheckbox) clearCheckbox.addEventListener('change', updateFileName);
+
+        updateFileName();
+    });
+</script>
+
 </body>
 </html>

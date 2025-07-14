@@ -62,34 +62,34 @@
 
         /* Novo Container Central */
         .main-container {
-            background-color: #fffaf0; /* Cor de fundo similar aos cards */
-            border-radius: 20px; /* Bordas arredondadas */
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15); /* Sombra mais pronunciada */
-            padding: 30px 40px; /* Preenchimento interno */
-            margin: 30px 10px 40px 10px; /* Margens: topo, laterais, inferior */
-            width: calc(100% - 20px); /* Ocupa quase 100% da largura com margem */
-            max-width: 1200px; /* Limite de largura para o container */
-            box-sizing: border-box; /* Inclui padding e border no width */
+            background-color: #fffaf0;
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            padding: 30px 40px;
+            margin: 30px 10px 40px 10px;
+            width: calc(100% - 20px);
+            max-width: 1200px;
+            box-sizing: border-box;
         }
 
         .container-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px; /* Espaço entre o cabeçalho e a barra de busca */
-            color: #600000; /* Cor do texto */
+            margin-bottom: 25px;
+            color: #600000;
         }
 
         .container-header h2 {
             margin: 0;
             font-size: 28px;
-            color: #600000; /* Cor do título */
+            color: #600000;
         }
-        
-        .container-header p { /* Estilo para a pequena descrição */
-            margin: 5px 0 0 0; /* Ajuste a margem conforme necessário */
+
+        .container-header p {
+            margin: 5px 0 0 0;
             font-size: 14px;
-            color: #8b0000; /* Cor da descrição */
+            color: #8b0000;
         }
 
 
@@ -110,41 +110,41 @@
         .form-busca {
             display: flex;
             align-items: center;
-            justify-content: flex-start; /* Alinha a busca à esquerda */
-            margin-bottom: 30px; /* Espaço abaixo da busca */
-            position: relative; /* Para posicionar o ícone da lupa */
+            justify-content: flex-start;
+            margin-bottom: 30px;
+            position: relative;
         }
 
         .form-busca input[type="text"] {
-            width: 100%; /* Ocupa a largura total do container */
-            padding: 12px 20px 12px 50px; /* Aumenta padding à esquerda para o ícone */
+            width: 100%;
+            padding: 12px 20px 12px 50px;
             border: none;
             border-radius: 25px;
             background-color: #fbbfc5;
             font-size: 16px;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
-            color: #600000; /* Cor do texto digitado */
-        }
-        
-        .form-busca input[type="text"]::placeholder {
-            color: #8b0000; /* Cor do placeholder */
+            color: #600000;
         }
 
-        .form-busca::before { /* Ícone da lupa */
-            content: "\1F50D"; /* Unicode para lupa */
-            font-family: 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif; /* Fonte para o ícone */
+        .form-busca input[type="text"]::placeholder {
+            color: #8b0000;
+        }
+
+        .form-busca::before {
+            content: "\1F50D";
+            font-family: 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
             position: absolute;
-            left: 20px; /* Posição do ícone */
+            left: 20px;
             color: #8b0000;
             font-size: 18px;
         }
 
         .produtos-grid {
-            display: grid; /* Usando Grid para melhor controle */
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* 3 colunas responsivas */
-            gap: 30px; /* Espaçamento entre os cards */
-            justify-items: center; /* Centraliza os itens no grid */
-            padding-top: 20px; /* Espaço entre a busca e os cards */
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            justify-items: center;
+            padding-top: 20px;
         }
 
         .card {
@@ -153,11 +153,11 @@
             border-radius: 20px;
             padding: 20px;
             text-align: center;
-            width: 100%; /* Ocupa a largura do grid item */
-            max-width: 300px; /* Limite de largura para o card */
+            width: 100%;
+            max-width: 300px;
             box-shadow: 2px 6px 8px rgba(0,0,0,0.1);
             transition: transform 0.2s ease-in-out;
-            box-sizing: border-box; /* Inclui padding e border no width */
+            box-sizing: border-box;
         }
 
         .card:hover {
@@ -182,9 +182,9 @@
             margin: 0;
             font-size: 14px;
             color: #8b0000;
-            min-height: 32px; /* Garante altura mínima para a descrição */
+            min-height: 32px;
             display: -webkit-box;
-            -webkit-line-clamp: 2; /* Limita a 2 linhas */
+            -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -227,7 +227,6 @@
             transform: translateY(-2px);
         }
 
-        /* Estilo para o ícone do menu responsivo */
         .menu-icon {
             display: none;
             font-size: 24px;
@@ -235,10 +234,229 @@
             color: #710100;
         }
 
+        /* Estilos do Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            background-color: #fffaf0;
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+            position: relative;
+            max-width: 700px;
+            width: 100%;
+            box-sizing: border-box;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .close-button {
+            color: #aaa;
+            font-size: 35px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #710100;
+            text-decoration: none;
+        }
+
+        /* Estilos dos campos de formulário e botões dentro do modal */
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #710100;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ffd7c9;
+            border-radius: 10px;
+            font-size: 16px;
+            background-color: #fffdf8;
+            box-sizing: border-box;
+            resize: none;
+            color: #710100;
+        }
+        
+        .linha-simples {
+            margin-bottom: 20px;
+        }
+
+        .linha-dupla {
+            display: flex;
+            gap: 50px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .linha-dupla > div {
+            flex: 1;
+            min-width: 200px;
+            margin-bottom: 20px;
+        }
+
+        .helptext {
+            font-size: 0.85em;
+            color: #8b0000;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .errorlist {
+            color: #e74c3c;
+            list-style-type: none;
+            padding: 0;
+            margin-top: 5px;
+        }
+
+        .botoes-form {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .botao-salvar, .botao-cancelar {
+            border: none;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        .botao-salvar {
+            background-color: #6e0707;
+            color: #fffdf8;
+        }
+
+        .botao-salvar:hover {
+            background-color: #9a2a2a;
+        }
+
+        .botao-cancelar {
+            background-color: #fbbfc5;
+            color: #600000;
+        }
+
+        .botao-cancelar:hover {
+            background-color: #ffdde6;
+        }
+
+        /* Estilos para o campo de imagem dentro do modal */
+        .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .file-input-label {
+            background-color: #6e0707;
+            color: #fffdf8;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+
+        .file-input-label:hover {
+            background-color: #9a2a2a;
+        }
+
+        .file-input-display {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ffd7c9;
+            border-radius: 10px;
+            background-color: #fffdf8;
+            color: #710100;
+            font-size: 16px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            min-width: 150px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .current-image-wrapper {
+            text-align: center;
+            margin-top: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px dashed #ffd7c9;
+            border-radius: 10px;
+            background-color: #fffdf8;
+        }
+
+        .current-image-wrapper p {
+            font-size: 14px;
+            color: #8b0000;
+            margin-bottom: 10px;
+        }
+
+        .current-image-wrapper img {
+            max-width: 150px;
+            max-height: 150px;
+            border-radius: 8px;
+            border: 1px solid #fcb1b0;
+            object-fit: cover;
+        }
+        
+        .image-clear-options {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            padding-left: 5px;
+            color: #8b0000;
+            font-size: 0.9em;
+        }
+
+        .image-clear-options input[type="checkbox"] {
+            margin-right: 5px;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+
         /* Media queries para responsividade */
         @media (max-width: 900px) {
             .produtos-grid {
-                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Ajusta para 2 colunas */
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             }
         }
 
@@ -268,17 +486,48 @@
             .navbar {
                 flex-wrap: wrap;
                 justify-content: space-between;
-                padding: 4px 20px; /* Ajusta padding da navbar */
+                padding: 4px 20px;
             }
 
             .main-container {
-                padding: 20px; /* Reduz padding em telas menores */
+                padding: 20px;
+            }
+            
+            /* Responsividade dos campos do modal */
+            .linha-dupla {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .linha-dupla > div {
+                min-width: 100%;
+                margin-bottom: 20px;
+            }
+
+            .linha-dupla > div:last-child {
+                margin-bottom: 0;
+            }
+
+            .file-input-wrapper {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .file-input-display {
+                margin-top: 10px;
+            }
+
+            .botoes-form .botao-salvar,
+            .botoes-form .botao-cancelar {
+                display: block;
+                width: calc(100% - 20px);
+                margin: 10px auto;
             }
         }
 
         @media (max-width: 550px) {
             .produtos-grid {
-                grid-template-columns: 1fr; /* Uma coluna em telas muito pequenas */
+                grid-template-columns: 1fr;
             }
             .container-header {
                 flex-direction: column;
@@ -297,10 +546,10 @@
     <div class="navbar">
         <img src="{% static 'confeitaria/imagens/LogoBarra.png' %}" alt="Logo Petit Rose" class="navbar-logo">
         <div class="navbar-menu">
-            <a href="#">Início</a>
-            <a href="#" class="ativo">Produtos</a>
+            <a href="{% url 'menu' %}">Início</a>
+            <a href="{% url 'listar_produto' %}" class="ativo">Produtos</a>
             <a href="#">Pedidos</a>
-            <a href="#">Clientes</a>
+            <a href="{% url 'listar_cliente' %}">Clientes</a>
             <a href="#">Relatórios</a>
             <a href="{% url 'autenticar_login' %}">Sair</a>
             <span class="menu-icon" onclick="toggleMenu()">☰</span>
@@ -330,7 +579,7 @@
                 <p>{{ produto.descricao }}</p>
                 <div class="preco">R$ {{ produto.preco }}</div>
 
-                <a href="{% url 'editar_produto' produto.id %}" class="btn-edit">Editar</a>
+                <button class="btn-edit open-edit-modal" data-produto-id="{{ produto.id }}">Editar</button>
 
                 <form action="{% url 'deletar_produto' produto.id %}" method="post" style="display:inline;">
                     {% csrf_token %}
@@ -343,11 +592,166 @@
         </div>
     </div>
 
+    <div id="editProductModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div id="modal-form-content">
+                <p>Carregando formulário...</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         function toggleMenu() {
             const navbarMenu = document.querySelector('.navbar-menu');
             navbarMenu.classList.toggle('show');
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('editProductModal');
+            const closeButton = document.querySelector('.close-button');
+            const editButtons = document.querySelectorAll('.open-edit-modal');
+            const modalFormContent = document.getElementById('modal-form-content');
+
+            // Abrir o modal
+            editButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = this.dataset.produtoId;
+                    // Carrega o formulário via AJAX
+                    fetch(`/produtos/editar_modal/${productId}/`) // Ajuste esta URL se necessário
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok ' + response.statusText);
+                            }
+                            return response.text();
+                        })
+                        .then(html => {
+                            modalFormContent.innerHTML = html;
+                            modal.style.display = 'flex'; // Exibe o modal como flexbox para centralizar
+                            // Re-inicializa o script do campo de imagem após carregar o HTML
+                            initializeFileInputScript();
+                            // Re-inicializa o script dos botões (cancelar dentro do modal)
+                            initializeModalButtons();
+
+                            // Adicionar event listener para o envio do formulário AJAX
+                            const form = modalFormContent.querySelector('form');
+                            if (form) {
+                                form.addEventListener('submit', function(event) {
+                                    event.preventDefault(); // Evita o envio padrão do formulário
+                                    const formData = new FormData(form);
+                                    
+                                    fetch(form.action, {
+                                        method: 'POST',
+                                        body: formData,
+                                        headers: {
+                                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                        }
+                                    })
+                                    .then(response => {
+                                        if (response.ok) {
+                                            return response.json(); // Espera um JSON de resposta
+                                        }
+                                        // Se a resposta não for OK, tenta ler o texto (pode ser HTML com erros)
+                                        return response.text().then(text => { throw new Error(text); });
+                                    })
+                                    .then(data => {
+                                        if (data.success) {
+                                           
+                                            modal.style.display = 'none'; // Fecha o modal
+                                            // Recarrega a página para ver as mudanças (mais simples)
+                                            location.reload(); 
+                                        } else {
+                                            // Se o formulário não for válido, exibe os erros no modal
+                                            modalFormContent.innerHTML = data.form_html;
+                                            initializeFileInputScript(); // Re-inicializa
+                                            initializeModalButtons(); // Re-inicializa
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Erro ao salvar o produto:', error);
+                                        alert('Ocorreu um erro ao salvar o produto. Detalhes no console.');
+                                        // Se o erro for HTML (erros de formulário), renderiza no modal
+                                        if (error.message.startsWith('<') || error.message.includes('csrfmiddlewaretoken')) {
+                                            modalFormContent.innerHTML = error.message;
+                                            initializeFileInputScript();
+                                            initializeModalButtons();
+                                        }
+                                    });
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao carregar o formulário:', error);
+                            modalFormContent.innerHTML = '<p>Erro ao carregar o formulário. Tente novamente.</p>';
+                        });
+                });
+            });
+
+            // Fechar o modal clicando no botão 'x'
+            closeButton.addEventListener('click', function() {
+                modal.style.display = 'none';
+                modalFormContent.innerHTML = '<p>Carregando formulário...</p>'; // Limpa o conteúdo
+            });
+
+            // Fechar o modal clicando fora dele
+            window.addEventListener('click', function(event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                    modalFormContent.innerHTML = '<p>Carregando formulário...</p>'; // Limpa o conteúdo
+                }
+            });
+
+            // Função para inicializar o script do input de arquivo (sempre chamada após carregar o form no modal)
+            function initializeFileInputScript() {
+                const fileInput = modalFormContent.querySelector('input[type="file"]');
+                // IMPORTANTE: O id do display do nome do arquivo no modal deve ser único,
+                // ou usar uma seleção baseada em relação ao fileInput
+                const fileNameDisplay = modalFormContent.querySelector('.file-input-display');
+                
+                // Elementos do clearableFileInput
+                const currentImageWrapper = modalFormContent.querySelector('.current-image-wrapper');
+                const clearCheckbox = modalFormContent.querySelector('.image-clear-options input[type="checkbox"]');
+                // const clearOptionContainer = modalFormContent.querySelector('.image-clear-options'); // Não usado diretamente, mas pode ser útil
+
+                if (fileInput && fileNameDisplay) {
+                    function updateFileNameDisplay() {
+                        if (fileInput.files && fileInput.files.length > 0) {
+                            fileNameDisplay.textContent = fileInput.files[0].name;
+                            if (clearCheckbox) {
+                                clearCheckbox.checked = false; // Desmarca ao escolher novo arquivo
+                            }
+                        } else if (clearCheckbox && clearCheckbox.checked) {
+                            fileNameDisplay.textContent = 'Imagem será removida';
+                        } else if (currentImageWrapper && currentImageWrapper.querySelector('img')) {
+                            const currentImageSrc = currentImageWrapper.querySelector('img').src;
+                            const fileName = currentImageSrc.split('/').pop();
+                            fileNameDisplay.textContent = fileName;
+                        } else {
+                            fileNameDisplay.textContent = 'Nenhum arquivo escolhido';
+                        }
+                    }
+
+                    updateFileNameDisplay(); // Inicializa o display
+
+                    fileInput.addEventListener('change', updateFileNameDisplay);
+                    if (clearCheckbox) {
+                        clearCheckbox.addEventListener('change', updateFileNameDisplay);
+                    }
+                }
+            }
+
+            // Função para inicializar botões dentro do modal (especialmente o Cancelar)
+            function initializeModalButtons() {
+                const cancelButtonModal = modalFormContent.querySelector('.botao-cancelar');
+                if (cancelButtonModal) {
+                    cancelButtonModal.addEventListener('click', function(event) {
+                        event.preventDefault(); // Impede o link padrão
+                        modal.style.display = 'none'; // Fecha o modal
+                        modalFormContent.innerHTML = '<p>Carregando formulário...</p>'; // Limpa
+                    });
+                }
+            }
+        });
     </script>
 </body>
 </html>

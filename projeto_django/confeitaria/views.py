@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.contrib import messages
 from .forms import ProdutoForm, ClienteForm, PedidoForm, PedidoProdutoForm, UsuarioForm
@@ -111,16 +112,34 @@ def listar_produto(request):
     return render(request, 'confeitaria/interface_produto.html', {'produtos': produtos})
 
 
-def editar_produto(request, id):
+def editar_produto(request, id): 
+    produto = get_object_or_404(Produto, id=id)
+    
+    if request.method == 'POST':
+        form = ProdutoForm(request.POST, request.FILES, instance=produto) 
+        if form.is_valid():
+            form.save()
+            return redirect('listar_produto') 
+    else:
+       
+        form = ProdutoForm(instance=produto)
+
+    return render(request, 'confeitaria/editar_produto.html', {'form': form})
+
+def editar_produto_modal(request, id):
     produto = get_object_or_404(Produto, id=id)
 
     if request.method == 'POST':
-        form = ProdutoForm(request.POST, instance=produto)
+        form = ProdutoForm(request.POST, request.FILES, instance=produto)
         if form.is_valid():
             form.save()
-            return redirect('listar_produto')  # Redireciona para listagem
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'form_html': render(request, 'confeitaria/partials/produto_form_partial.html', {'form': form, 'produto': produto}).content.decode('utf-8')})
     else:
         form = ProdutoForm(instance=produto)
+    
+    return render(request, 'confeitaria/partials/produto_form_partial.html', {'form': form, 'produto': produto})
 
     return render(request, 'confeitaria/editar_produto.html', {'form': form, 'produto': produto})
 
