@@ -1,15 +1,170 @@
+{# confeitaria/templates/editar_pedido.html #}
 <!DOCTYPE html>
 <html>
 <head>
     <title>Editar Pedido</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2, h3 { color: #333; }
+        form p { margin-bottom: 10px; }
+        label { display: inline-block; width: 100px; font-weight: bold; }
+        input[type="text"], input[type="number"], select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 200px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        a { color: purple; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .errorlist { color: red; list-style-type: none; padding-left: 0; margin-top: 5px; }
+        
+        /* Section for adding new products */
+        .add-new-product-section {
+            border: 1px solid #eee;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .add-new-product-section .form-fields {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .add-new-product-section .form-fields p {
+            margin: 0; /* Remove default paragraph margin */
+        }
+        .add-new-product-section .form-fields label {
+            width: auto; /* Let label width adjust */
+            font-weight: normal;
+        }
+        .add-new-product-button {
+            background-color: #28a745; /* Green for add */
+        }
+        .add-new-product-button:hover {
+            background-color: #218838;
+        }
+
+        /* Section for existing items */
+        .existing-items-section {
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .item-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr; /* Product Name, Quantity, Apagar Button */
+            gap: 10px;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px dashed #eee;
+        }
+        .item-row.header {
+            font-weight: bold;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 5px;
+        }
+        .item-row:last-of-type {
+            border-bottom: none;
+        }
+        .remove-item-button {
+            background-color: #dc3545; /* Red for remove */
+            padding: 5px 10px; /* Smaller padding for individual buttons */
+        }
+        .remove-item-button:hover {
+            background-color: #c82333;
+        }
+
+    </style>
 </head>
 <body>
     <h1>Editar Pedido</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Salvar Alteracoes</button>
-        <a href="{% url 'listar_pedidos' %}">Cancelar</a>
-    </form>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <h2>Cliente: {{ pedido.cliente.nome }}</h2>
+
+    {# Form for adding new products #}
+    <div class="add-new-product-section">
+        <h3>Adicionar Produto</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-fields">
+                <p>{{ add_product_form.id_produto.label_tag }} {{ add_product_form.id_produto }}</p>
+                <p>{{ add_product_form.quantidade.label_tag }} {{ add_product_form.quantidade }}</p>
+                <button type="submit" name="add_new_product" class="add-new-product-button">Adicionar</button>
+            </div>
+            {% if add_product_form.errors %}
+                <ul class="errorlist">
+                    {% for field_errors in add_product_form.errors.values %}
+                        {% for error in field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </form>
+    </div>
+
+    {# Form for managing existing products #}
+    <div class="existing-items-section">
+        <h3>Itens do Pedido</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ item_formset.management_form }} 
+
+            <div class="item-row header">
+                <span>Produto</span>
+                <span>Quantidade</span>
+                <span>Ações</span> {# Changed from "Apagar" to "Ações" for clarity #}
+            </div>
+
+            {% for item_form in item_formset %}
+                {% if item_form.instance.pk %} {# This ensures we only show existing items in this loop #}
+                    <div class="item-row">
+                        <span>{{ item_form.instance.id_produto.nome }}</span>
+                        <span>
+                            {{ item_form.quantidade }}
+                            {% if item_form.quantidade.errors %}<ul class="errorlist">{% for error in item_form.quantidade.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+                        </span>
+                        <span>
+                            {# This form will submit to the same view, triggering the 'remove_item' logic #}
+                            <button type="submit" name="remove_item" value="remove" class="remove-item-button">Apagar</button>
+                            <input type="hidden" name="pedido_produto_id" value="{{ item_form.instance.id }}">
+                        </span>
+                        {{ item_form.id }} {# Hidden ID field for existing item (needed if you still use formset save but not delete checkbox) #}
+                        {{ item_form.DELETE }} {# Keep the delete checkbox hidden if you want to use it with JS or still allow formset's delete management #}
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            {# This button saves changes to quantities of existing items #}
+            <p style="margin-top: 20px;">
+                <button type="submit" name="save_existing_items">Salvar Alteracoes</button>
+                <a href="{% url 'listar_pedidos' %}">Cancelar</a>
+            </p>
+        </form>
+    </div>
+
 </body>
 </html>

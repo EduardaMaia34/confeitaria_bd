@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.contrib import messages
-from .forms import ProdutoForm, ClienteForm, PedidoForm, PedidoProdutoForm, UsuarioForm
+from .forms import ProdutoForm, ClienteForm, PedidoForm, PedidoProdutoForm, UsuarioForm, PedidoProdutoFormSet
 from .models import Pedido, Cliente, Produto, PedidoProduto, Usuario
 from django.contrib import messages
 from django.contrib.auth import login as django_login, get_user_model
@@ -206,18 +206,73 @@ def listar_pedidos(request):
 
     return render(request, 'confeitaria/interface_pedido.html', {'pedidos': pedidos})
 
-def editar_pedido(request,id):
-    pedido = get_object_or_404(Pedido, id=id)
-    
-    if request.method == 'POST':
-        form = PedidoForm(request.POST, instance=pedido)
-        if form.is_valid():
-            form.save()
-            return redirect('listar_pedidos')  # Redireciona para listagem
-    else:
-        form = PedidoForm(instance=pedido)
 
-    return render(request, 'confeitaria/editar_pedido.html', {'form': form, 'pedido': pedido})
+def editar_pedido(request, id):
+    pedido = get_object_or_404(Pedido, id=id)
+
+    add_product_form = PedidoProdutoForm()
+
+    if request.method == 'POST':
+        if 'add_new_product' in request.POST:
+            add_product_form = PedidoProdutoForm(request.POST)
+            if add_product_form.is_valid():
+                produto_a_adicionar = add_product_form.cleaned_data['id_produto']
+                quantidade_a_adicionar = add_product_form.cleaned_data['quantidade']
+
+                try:
+                    pedido_produto_existente = PedidoProduto.objects.get(
+                        id_pedido=pedido,
+                        id_produto=produto_a_adicionar
+                    )
+                    pedido_produto_existente.quantidade += quantidade_a_adicionar
+                    pedido_produto_existente.save()
+                    messages.success(request, f"Quantidade do produto '{produto_a_adicionar.nome}' atualizada para {pedido_produto_existente.quantidade}.")
+
+                except PedidoProduto.DoesNotExist:
+                    new_item = add_product_form.save(commit=False)
+                    new_item.id_pedido = pedido
+                    new_item.save()
+                    messages.success(request, f"Produto '{new_item.id_produto.nome}' adicionado ao pedido.")
+                
+                return redirect('editar_pedido', id=pedido.id)
+
+            else:
+                messages.error(request, "Dados inválidos para adicionar produto.")
+        
+        elif 'save_existing_items' in request.POST:
+            item_formset = PedidoProdutoFormSet(request.POST, instance=pedido)
+            if item_formset.is_valid():
+                item_formset.save()
+                messages.success(request, "Produtos do pedido atualizados com sucesso!")
+                return redirect('listar_pedidos')
+            else:
+                messages.error(request, "Houve um erro ao salvar os produtos do pedido. Por favor, verifique os campos.")
+        elif 'remove_item' in request.POST:
+            pedido_produto_id = request.POST.get('pedido_produto_id')
+            if pedido_produto_id:
+                try:
+                    item_to_delete = PedidoProduto.objects.get(id=pedido_produto_id, id_pedido=pedido)
+                    item_to_delete.delete()
+                    messages.success(request, "Produto removido do pedido.")
+                    return redirect('editar_pedido', id=pedido.id)
+                except PedidoProduto.DoesNotExist:
+                    messages.error(request, "Produto não encontrado no pedido.")
+                except Exception as e:
+                    messages.error(request, f"Erro ao remover produto: {e}")
+            else:
+                messages.error(request, "ID do produto a ser removido não fornecido.")
+        else:
+            messages.warning(request, "Ação desconhecida.")
+
+    item_formset = PedidoProdutoFormSet(instance=pedido)
+
+    context = {
+        'pedido': pedido,
+        'item_formset': item_formset,
+        'add_product_form': add_product_form,
+    }
+    return render(request, 'confeitaria/editar_pedido.html', context)
+
 
 def deletar_pedido(request, id):
     pedido = get_object_or_404(Pedido, id=id)

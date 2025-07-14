@@ -2,6 +2,7 @@
 from django import forms
 from django.forms.widgets import ClearableFileInput
 from .models import Produto, Cliente, Pedido, PedidoProduto, Usuario
+from django.forms import inlineformset_factory
 
 class CustomClearableFileInput(ClearableFileInput):
     # Definindo template_name como um atributo da classe
@@ -15,7 +16,7 @@ class ProdutoForm(forms.ModelForm):
         widgets = {
             # Agora, instancie o seu widget personalizado sem passar template_name aqui
             'imagem': CustomClearableFileInput(attrs={'class': 'meu-input-imagem'}),
-        }    
+        }
     def __str__(self):
         return self.nome  # importante!
         
@@ -38,14 +39,28 @@ class PedidoProdutoForm(forms.ModelForm):
     class Meta:
         model = PedidoProduto
         fields = ['id_produto', 'quantidade']
+        widgets = {
+            'quantidade': forms.NumberInput(attrs={'min': '1'})
+        }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Garante que o campo seja um select com os produtos
         self.fields['id_produto'].queryset = Produto.objects.all()
+        # Change the empty_label for the dropdown:
+        self.fields['id_produto'].empty_label = "--- Selecione um produto ---" # Or "" to remove it completely
+        # This is the actual label shown next to the dropdown in the template
+        self.fields['id_produto'].label = "Produto:"
+
+PedidoProdutoFormSet = inlineformset_factory(
+    Pedido,
+    PedidoProduto,
+    form=PedidoProdutoForm,
+    extra=1,
+    can_delete=True,
+    fields=('id_produto', 'quantidade',)
+)
     
 class UsuarioForm(forms.ModelForm):
     class Meta:
         model = Usuario
         fields = ['usuario', 'senha']
-        

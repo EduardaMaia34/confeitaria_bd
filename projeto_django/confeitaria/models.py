@@ -31,9 +31,15 @@ class Pedido(models.Model):
 
 
 class PedidoProduto(models.Model):
-    id_pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE)
+    id_pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='itens_do_pedido')
     id_produto = models.ForeignKey(Produto, on_delete=models.CASCADE)
     quantidade = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ('id_pedido', 'id_produto') # Good for preventing duplicate products in a single order
+    
+    def __str__(self):
+        return f"{self.quantidade} x {self.id_produto.nome} no Pedido #{self.id_pedido.pk}"
 
 class Usuario(models.Model):
     id = models.AutoField(primary_key=True)
