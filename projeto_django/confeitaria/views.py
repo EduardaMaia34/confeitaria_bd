@@ -48,36 +48,41 @@ def criar_cliente(request):
 
     return render(request, 'confeitaria/cadastrar_cliente.html', {'form': form})
 
+
 def criar_pedido(request):
     if request.method == 'POST':
         form = PedidoForm(request.POST)
         if form.is_valid():
             pedido = form.save()
-            return redirect('adicionar_produto_ao_pedido', id_pedido=pedido.id)  # <- IMPORTANTE
+            return redirect('adicionar_produto_ao_pedido', id_pedido=pedido.id)
     else:
         form = PedidoForm()
     return render(request, 'confeitaria/cadastrar_pedido.html', {'form': form})
 
+
 def adicionar_produto_ao_pedido(request, id_pedido):
     pedido = get_object_or_404(Pedido, id=id_pedido)
+    produtos = Produto.objects.all()
 
     if request.method == 'POST':
         form = PedidoProdutoForm(request.POST)
         if form.is_valid():
             pedido_produto = form.save(commit=False)
-            pedido_produto.id_pedido = pedido  # associa ao pedido existente
+            pedido_produto.id_pedido = pedido
             pedido_produto.save()
             return redirect('adicionar_produto_ao_pedido', id_pedido=pedido.id)
     else:
         form = PedidoProdutoForm()
 
     return render(request, 'confeitaria/adicionar_produto.html', {
-    'pedido': pedido,
-    'form': form
+        'pedido': pedido,
+        'form': form,
+        'produtos': produtos
     })
 
+
 def listar_pedidos(request):
-    pedidos = Pedido.objects.all().order_by('-data_pedido') # Added ordering for better display
+    pedidos = Pedido.objects.all().order_by('-data_pedido')
     return render(request, 'confeitaria/lista_pedidos.html', {'pedidos': pedidos})
 
 def autenticar_login(request):
