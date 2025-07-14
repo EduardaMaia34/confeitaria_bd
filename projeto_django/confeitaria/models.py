@@ -14,8 +14,12 @@ class Produto(models.Model):
 class Cliente(models.Model):
     id = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=100)
-    cpf = models.CharField(max_length = 12)
-    
+    telefone = models.CharField(max_length=15, default='')  # Formato: (00) 00000-0000
+    rua = models.CharField(max_length=100, default='')
+    numero = models.CharField(max_length=10, default='')
+    bairro = models.CharField(max_length=50, default='')
+    cep = models.CharField(max_length=9, default='')  # Formato: 00000-000
+
     def __str__(self):
         return self.nome
     

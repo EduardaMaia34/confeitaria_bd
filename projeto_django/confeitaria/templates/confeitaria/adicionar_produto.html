@@ -1,31 +1,46 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Adicionar Produto ao Pedido</title>
 </head>
 <body>
-    <h1>Adicionar Produto ao Pedido #{{ pedido.id }}</h1>
-    <p><strong>Cliente:</strong> {{ pedido.cliente.nome }}</p>
+    <h1>Cliente: {{ pedido.cliente.nome }}</h1> {# Assuming pedido.cliente is accessible #}
 
-    {% if form.errors %}
-        <ul class="errorlist">
-            {% for field, errors in form.errors.items %}
-                {% for error in errors %}
-                    <li>{{ field }}: {{ error }}</li>
-                {% endfor %}
-            {% endfor %}
-        </ul>
-    {% endif %}
-
+    <h2>Adicionar Produto</h2>
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-
+        <p>Produto: {{ form.id_produto }}</p> {# This is the select/dropdown for products #}
+        <p>Quantidade: {{ form.quantidade }}</p> {# This is the quantity input #}
         <button type="submit">Adicionar Produto</button>
     </form>
 
-    <br>
-    <a href="{% url 'menu'%}">Voltar para o Menu</a>
+    <h2>Itens do Pedido</h2>
+    <p><strong>Produto</strong> <strong>Quantidade</strong> <strong>Ações</strong></p>
+    {% if itens_do_pedido %}
+        {% for item in itens_do_pedido %}
+            <div>
+                <span>{{ item.id_produto.nome }}</span> {# Assuming id_produto has a 'nome' field #}
+                <span>{{ item.quantidade }}</span>
+                <span>
+                    <form action="{% url 'remover_produto_do_pedido' item.id %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" style="background:none; border:none; padding:0; cursor:pointer; color:purple; text-decoration:underline;">Remover</button>
+                    </form>
+                </span>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>Nenhum produto adicionado ainda.</p>
+    {% endif %}
+
+    <p><a href="{% url 'listar_pedidos' %}">Voltar para a lista de pedidos</a></p>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 </body>
 </html>
