@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Clientes - Petit Rose</title>
-  
   <style>
     body {
       margin: 0;
@@ -13,7 +12,6 @@
       color: #710100;
     }
 
-    /* NAVBAR */
     .navbar {
       margin: 20px 10px 0 10px;
       background-color: #fcb1b0;
@@ -53,18 +51,15 @@
       cursor: pointer;
     }
 
-    /* CONTAINER (mantido do seu código original) */
     .container {
-      max-width: 1380px;
-      margin: 40px auto;
-      padding: 30px 40px;
+      max-width: 1500px;
+      margin: 50px 30px;
+      padding: 40px 40px 150px 40px;
       background-color: #fff8e5;
-      border-radius: 16px;
-      box-shadow: 0 0 5px #fcb1b0;
-      border-top: 1px solid #ffd7c9;
-      border-right: 4px solid #ffd7c9;
-      border-bottom: 4px solid #ffd7c9;
-      border-left: 1px solid #ffd7c9;
+      border-radius: 24px;
+      box-shadow: 0 0 8px #fcb1b0;
+      border: 1px solid #ffd7c9;
+      overflow: visible;
     }
 
     h2 {
@@ -81,34 +76,166 @@
     }
 
     .botao-novo {
-      background-color: #6e0707;
-      color: #fffdf8;
+      background-color: #710100;
+      color: #fff1e6;
       padding: 10px 20px;
       border: none;
       border-radius: 12px;
       font-size: 16px;
       cursor: pointer;
+      text-decoration: none;
     }
 
     .botao-novo:hover {
       background-color: #9a2a2a;
     }
 
-    .barra-busca {
+    .form-busca {
+      position: relative;
       display: flex;
       align-items: center;
       background-color: #ffeae4;
       border-radius: 30px;
       padding: 8px 20px;
-      margin-bottom: 30px;
+      margin-bottom: 40px;
     }
 
-    .barra-busca input {
+    .form-busca::before {
+      content: "\1F50D";
+      font-family: 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
+      position: absolute;
+      left: 20px;
+      color: #710100;
+      font-size: 18px;
+    }
+
+    .form-busca input {
       border: none;
       outline: none;
       background: none;
       font-size: 16px;
       flex: 1;
+      padding-left: 30px;
+    }
+
+    .clientes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+
+    .card-cliente {
+      background-color: #fff1e6;
+      border: 2px solid #fcb1b0;
+      border-radius: 12px;
+      padding: 20px 25px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+    }
+
+    .card-cliente h3 {
+      margin: 0 0 10px 0;
+      color: #710100;
+    }
+
+    .card-cliente ul {
+      margin: 0 0 10px 0;
+      padding-left: 18px;
+      color: #9a4a4a;
+    }
+
+    .card-botoes {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .botao-editar,
+    .botao-excluir {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 14px;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+    }
+
+    .botao-editar {
+      background-color: #fcb1b0;
+      color: #710100;
+    }
+
+    .botao-excluir {
+      background-color: #710100;
+      color: #fff1e6;
+    }
+
+    /* Estilo do Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-conteudo {
+      background-color: #ffffe3;
+      margin: 5% auto;
+      padding: 30px;
+      border: 3px solid #fcb1b0;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+    }
+
+    .modal-conteudo input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .fechar {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #710100;
+      cursor: pointer;
+    }
+
+    @media (max-width: 1024px) {
+      .clientes-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .clientes-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topo-clientes {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .card-botoes {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -128,19 +255,93 @@
     </div>
   </div>
 
-  <!-- CONTEÚDO CLIENTES -->
+  <!-- CONTEÚDO -->
   <div class="container">
     <div class="topo-clientes">
       <h2 style="margin: 0;">Cliente</h2>
-      <button class="botao-novo"> + Novo Cliente</button>
+      <a href="{% url 'criar_cliente' %}" class="botao-novo">+ Novo Cliente</a>
     </div>
 
-    <div class="barra-busca">
-      🔍 <input type="text" placeholder="Buscar cliente...">
+    <div class="form-busca">
+      <input type="text" placeholder="Buscar cliente...">
     </div>
 
-    <!-- Aqui futuramente entrarão os cards dos clientes -->
+    <!-- GRADE DE CLIENTES -->
+    <div class="clientes-grid">
+      {% for cliente in clientes %}
+        <div class="card-cliente">
+          <div>
+            <h3>Cliente: {{ cliente.nome }}</h3>
+            <ul>
+              <li>Telefone: {{ cliente.telefone }}</li>
+              <li>Endereço: {{ cliente.rua }}, Nº {{ cliente.numero }}</li>
+              <li>Bairro: {{ cliente.bairro }}</li>
+              <li>CEP: {{ cliente.cep }}</li>
+            </ul>
+          </div>
+
+          <div class="card-botoes">
+            <button class="botao-editar" onclick="abrirModal({{ cliente.id }})">Editar</button>
+            <form action="{% url 'deletar_cliente' cliente.id %}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir este cliente?');">
+              {% csrf_token %}
+              <button type="submit" class="botao-excluir">Excluir</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Modal de Edição -->
+        <div id="modal-{{ cliente.id }}" class="modal">
+          <div class="modal-conteudo">
+            <span class="fechar" onclick="fecharModal({{ cliente.id }})">&times;</span>
+            <h2>Editar Cliente</h2>
+            <form method="post" action="{% url 'editar_cliente' cliente.id %}">
+              {% csrf_token %}
+              <label>Nome:</label>
+              <input type="text" name="nome" value="{{ cliente.nome }}">
+
+              <label>Telefone:</label>
+              <input type="text" name="telefone" value="{{ cliente.telefone }}">
+
+              <label>Rua:</label>
+              <input type="text" name="rua" value="{{ cliente.rua }}">
+
+              <label>Número:</label>
+              <input type="text" name="numero" value="{{ cliente.numero }}">
+
+              <label>Bairro:</label>
+              <input type="text" name="bairro" value="{{ cliente.bairro }}">
+
+              <label>CEP:</label>
+              <input type="text" name="cep" value="{{ cliente.cep }}">
+
+              <button type="submit" class="botao-novo" style="margin-top: 15px;">Salvar Alterações</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}
+        <p style="text-align:center; color: #6e0707;">Nenhum cliente encontrado.</p>
+      {% endfor %}
+    </div>
   </div>
 
+  <!-- JS do Modal -->
+  <script>
+    function abrirModal(id) {
+      document.getElementById('modal-' + id).style.display = 'block';
+    }
+
+    function fecharModal(id) {
+      document.getElementById('modal-' + id).style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+      const modais = document.getElementsByClassName('modal');
+      for (let i = 0; i < modais.length; i++) {
+        if (event.target === modais[i]) {
+          modais[i].style.display = "none";
+        }
+      }
+    }
+  </script>
 </body>
 </html>

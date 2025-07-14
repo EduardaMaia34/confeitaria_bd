@@ -150,41 +150,51 @@
   <!-- FORMULÁRIO DE CADASTRO -->
   <div class="container">
     <h2>Cadastro de Novo Cliente</h2>
-    <form action="#" method="post">
+      {% if messages %}
+        <ul>
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
 
-      <div class="linha-dupla">
-        <div>
-          <label for="nome">Nome:</label>
-          <input type="text" id="nome" name="nome" required>
-        </div>
-        <div>
-          <label for="telefone">Telefone:</label>
-          <input type="tel" id="telefone" name="telefone" placeholder="(00) 90000-0000" required>
-        </div>
+
+      <form method="post">
+         {% csrf_token %}
+         <div class="linha-dupla">
+          <div>
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" required>
       </div>
-
-      <div style="margin-bottom: 20px;">
-        <label for="rua">Rua:</label>
-        <input type="text" id="rua" name="rua" required>
+      <div>
+        <label for="telefone">Telefone:</label>
+        <input type="tel" id="telefone" name="telefone" placeholder="(00) 90000-0000" required>
       </div>
+    </div>
 
-      <div class="endereco-linha">
-        <div>
-          <label for="numero">Número:</label>
-          <input type="text" id="numero" name="numero" required>
-        </div>
-        <div>
-          <label for="bairro">Bairro:</label>
-          <input type="text" id="bairro" name="bairro" required>
-        </div>
-        <div>
-          <label for="cep">CEP:</label>
-          <input type="text" id="cep" name="cep" placeholder="00000-000" required>
-        </div>
+    <div style="margin-bottom: 20px;">
+      <label for="rua">Rua:</label>
+      <input type="text" id="rua" name="rua" required>
+    </div>
+
+    <div class="endereco-linha">
+      <div>
+        <label for="numero">Número:</label>
+        <input type="text" id="numero" name="numero" required>
       </div>
+      <div>
+        <label for="bairro">Bairro:</label>
+        <input type="text" id="bairro" name="bairro" required>
+      </div>
+      <div>
+        <label for="cep">CEP:</label>
+        <input type="text" id="cep" name="cep" placeholder="00000-000" required>
+      </div>
+    </div>
 
-      <button type="submit" class="botao-salvar">Salvar Cliente</button>
-    </form>
+    <button type="submit" class="botao-salvar">Salvar Cliente</button>
+  </form>
+
   </div>
 
 </body>

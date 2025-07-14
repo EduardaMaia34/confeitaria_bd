@@ -26,10 +26,25 @@ def criar_cliente(request):
     if request.method == 'POST':
         form = ClienteForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('listar_cliente')  # ou uma página de sucesso
+            nome = form.cleaned_data['nome']
+            telefone = form.cleaned_data['telefone']
+
+            # Verifica se já existe cliente com o mesmo nome e telefone
+            if Cliente.objects.filter(nome=nome, telefone=telefone).exists():
+                messages.warning(request, "Cliente já existente.")
+                return render(request, 'confeitaria/cadastrar_cliente.html', {'form': form})
+
+            try:
+                form.save()
+                messages.success(request, "Cliente cadastrado com sucesso!")
+                return redirect('listar_cliente')
+            except Exception as e:
+                messages.error(request, "Erro: não foi possível cadastrar o cliente.")
+        else:
+            messages.warning(request, "Dados inválidos. Verifique os campos.")
     else:
         form = ClienteForm()
+
     return render(request, 'confeitaria/cadastrar_cliente.html', {'form': form})
 
 def criar_pedido(request):

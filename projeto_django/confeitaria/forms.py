@@ -13,7 +13,7 @@ class ProdutoForm(forms.ModelForm):
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
-        fields = ['nome', 'cpf']
+        fields = ['nome', 'telefone', 'rua', 'numero', 'bairro', 'cep']
     
     def __str__(self):
         return self.nome
