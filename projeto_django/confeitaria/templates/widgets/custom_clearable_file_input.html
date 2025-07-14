@@ -1,0 +1,13 @@
+{# templates/widgets/custom_clearable_file_input.html #}
+
+{# O input file real, que será escondido pelo CSS. Django gera o 'id' e 'name' aqui. #}
+<input type="{{ widget.type }}" name="{{ widget.name }}"{% if widget.value != None %} value="{{ widget.value|stringformat:'s' }}"{% endif %}{% include "django/forms/widgets/attrs.html" %}>
+
+{# O checkbox "Clear" / "Manter imagem atual?". Só aparece se há uma imagem inicial. #}
+{% if widget.is_initial %}
+    {# Nota: O id do checkbox é gerado automaticamente pelo Django como widget.checkbox_id #}
+    <div class="image-clear-options"> {# Adicionamos essa div para estilização #}
+        <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}" {% if widget.is_checked %}checked{% endif %}>
+        <label for="{{ widget.checkbox_id }}">Remover imagem atual</label> {# Texto ajustado para "Remover" #}
+    </div>
+{% endif %}
