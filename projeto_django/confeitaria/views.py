@@ -10,6 +10,7 @@ from django.db import connection
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.template.loader import render_to_string
+from django.db.models import Q
 
 def is_gerente(user):
     
@@ -119,17 +120,27 @@ def listar_cliente(request):
 
 @login_required
 def listar_produto(request):
+    
+    search_query = request.GET.get('q', '').strip()
+
     produtos = Produto.objects.all()
-    
-    # Agora, esta chamada já considera o username 'admin'
-    usuario_eh_gerente = is_gerente(request.user)
-    
+
+    if search_query:
+        produtos = produtos.filter(
+            Q(nome__icontains=search_query) | Q(descricao__icontains=search_query)
+        )
+
+    usuario_eh_gerente = is_gerente(request.user) # Keep your existing manager check
+
     context = {
         'produtos': produtos,
         'is_gerente': usuario_eh_gerente,
+        'search_query': search_query,
     }
     
     return render(request, 'confeitaria/interface_produto.html', context)
+
+
 
 
 def editar_produto(request, id):
@@ -159,8 +170,6 @@ def editar_produto_modal(request, id):
         form = ProdutoForm(instance=produto)
     
     return render(request, 'confeitaria/partials/produto_form_partial.html', {'form': form, 'produto': produto})
-
-    return render(request, 'confeitaria/editar_produto.html', {'form': form, 'produto': produto})
 
 def deletar_produto(request, id):
     produto = get_object_or_404(Produto, id=id)
