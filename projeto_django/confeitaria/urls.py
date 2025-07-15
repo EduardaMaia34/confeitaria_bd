@@ -21,4 +21,7 @@ urlpatterns = [
     path('pedido/cadastro', views.criar_pedido, name='criar_pedido'),
     path('pedido/<int:id_pedido>/adicionar_produto/', views.adicionar_produto_ao_pedido, name='adicionar_produto_ao_pedido'),
     path('pedidos/', views.listar_pedidos, name='listar_pedidos'),
+
+     # ✅ NOVA ROTA DO RELATÓRIO
+    path('relatorios/vendas/', views.relatorio_vendas, name='relatorio_vendas'),
 ]

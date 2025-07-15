@@ -28,7 +28,13 @@ class Pedido(models.Model):
     id = models.AutoField(primary_key=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     data_pedido = models.DateTimeField(auto_now_add=True)
-
+    valor_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    forma_pagamento = models.CharField(max_length=50, choices=[
+        ('dinheiro', 'Dinheiro'),
+        ('pix', 'Pix'),
+        ('debito', 'Cartão de Débito'),
+        ('credito', 'Cartão de Crédito'),
+    ])
 
 class PedidoProduto(models.Model):
     id_pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE)

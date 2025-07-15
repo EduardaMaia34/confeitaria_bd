@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Clientes - Petit Rose</title>
+  {% load static %}
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Georgia', serif;
+      background-color: #fffbe6;
+      color: #710100;
+    }
+
+    /* NAVBAR */
+    .navbar-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .navbar {
+      width: 100%;
+      max-width: 1300px;
+      background-color: #fcb1b0;
+      padding: 4px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      position: relative;
+    }
+
+    .navbar-logo {
+      height: 50px;
+      border-radius: 12px;
+    }
+
+    .navbar-menu {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .navbar-menu a {
+      text-decoration: none;
+      color: #710100;
+      font-size: 18px;
+      padding: 6px 12px;
+      border-radius: 12px;
+      transition: background-color 0.3s ease;
+    }
+
+    .navbar-menu a:hover {
+      background-color: #ffdeeb;
+    }
+
+    .navbar-menu .ativo {
+      background-color: #fffbe6;
+      font-weight: bold;
+    }
+
+    .menu-icon {
+      display: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #710100;
+    }
+
+    /* CONTAINER */
+    .container {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 30px 40px;
+      background-color: #fffaf0;
+      border-radius: 16px;
+      box-shadow: 0 0 5px #fcb1b0;
+      border-top: 1px solid #ffd7c9;
+      border-right: 4px solid #ffd7c9;
+      border-bottom: 4px solid #ffd7c9;
+      border-left: 1px solid #ffd7c9;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 28px;
+    }
+
+    .topo-clientes {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .botao-novo {
+      background-color: #600000;
+      color: #fff8e6;
+      padding: 12px 24px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+
+    .botao-novo:hover {
+      background-color: #8b0000;
+    }
+
+    .form-busca {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background-color: #ffeae4;
+      border-radius: 30px;
+      padding: 8px 20px;
+      margin-bottom: 40px;
+    }
+
+    .form-busca::before {
+      content: "\1F50D";
+      font-family: 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
+      position: absolute;
+      left: 20px;
+      color: #710100;
+      font-size: 18px;
+    }
+
+    .form-busca input {
+      border: none;
+      outline: none;
+      background: none;
+      font-size: 16px;
+      flex: 1;
+      padding-left: 30px;
+    }
+
+    .clientes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+
+    .card-cliente {
+      background-color: #fff1e6;
+      border: 2px solid #fcb1b0;
+      border-radius: 12px;
+      padding: 20px 25px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 250px;
+      overflow: auto;
+    }
+
+    .card-cliente h3 {
+      margin: 0 0 10px 0;
+      color: #710100;
+    }
+
+    .card-cliente ul {
+      margin: 0 0 10px 0;
+      padding-left: 18px;
+      color: #9a4a4a;
+    }
+
+    .card-botoes {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .botao-editar,
+    .botao-excluir {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 14px;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+    }
+
+    .botao-editar {
+      background-color: #fcb1b0;
+      color: #710100;
+    }
+
+    .botao-excluir {
+      background-color: #710100;
+      color: #fff1e6;
+    }
+
+    /* MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-conteudo {
+      background-color: #fffaf0;
+      padding: 30px;
+      border: 3px solid #fcb1b0;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .modal-conteudo input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    .fechar {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #710100;
+      cursor: pointer;
+    }
+
+    @media (max-width: 1024px) {
+      .clientes-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .navbar-menu {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+        display: none;
+        position: absolute;
+        top: 70px;
+        right: 10px;
+        background-color: #fcb1b0;
+        border-radius: 10px;
+        padding: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      }
+
+      .navbar-menu.show {
+        display: flex;
+      }
+
+      .menu-icon {
+        display: block;
+      }
+
+      .topo-clientes {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .card-botoes {
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .clientes-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <div class="navbar-container">
+    <div class="navbar">
+      <img src="{% static 'confeitaria/imagens/LogoBarra.png' %}" alt="Logo Petit Rose" class="navbar-logo">
+      <span class="menu-icon" onclick="toggleMenu()">☰</span>
+      <div class="navbar-menu">
+        <a href="{% url 'menu' %}">Início</a>
+        <a href="{% url 'listar_produto' %}">Produtos</a>
+        <a href="#">Pedidos</a>
+        <a href="{% url 'listar_cliente' %}" class="ativo">Clientes</a>
+        <a href="{% url 'relatorio_vendas' %}">Relatórios</a>
+        <a href="{% url 'autenticar_login' %}">Sair</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO -->
+  <div class="container">
+    <div class="topo-clientes">
+      <h2 style="margin: 0;">Cliente</h2>
+      <a href="{% url 'criar_cliente' %}" class="botao-novo">+ Novo Cliente</a>
+    </div>
+
+    <form class="form-busca" method="get">
+      <input type="text" name="q" placeholder="Buscar cliente..." value="{{ request.GET.q }}">
+    </form>
+
+    <div class="clientes-grid">
+      {% for cliente in clientes %}
+      <div class="card-cliente">
+        <div>
+          <h3>Cliente: {{ cliente.nome }}</h3>
+          <ul>
+            <li>Telefone: {{ cliente.telefone }}</li>
+            <li>Endereço: {{ cliente.rua }}, Nº {{ cliente.numero }}</li>
+            <li>Bairro: {{ cliente.bairro }}</li>
+            <li>CEP: {{ cliente.cep }}</li>
+          </ul>
+        </div>
+        <div class="card-botoes">
+          <button class="botao-editar" onclick="abrirModal({{ cliente.id }})">Editar</button>
+          <form action="{% url 'deletar_cliente' cliente.id %}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir este cliente?');">
+            {% csrf_token %}
+            <button type="submit" class="botao-excluir">Excluir</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- MODAL DE EDIÇÃO -->
+      <div id="modal-{{ cliente.id }}" class="modal" onclick="fecharModal({{ cliente.id }})">
+        <div class="modal-conteudo" onclick="event.stopPropagation()">
+          <span class="fechar" onclick="fecharModal({{ cliente.id }})">&times;</span>
+          <h2 style="text-align:center; margin-bottom: 20px;">Editar Cliente</h2>
+          <form method="post" action="{% url 'editar_cliente' cliente.id %}">
+            {% csrf_token %}
+            <label>Nome:</label>
+            <input type="text" name="nome" value="{{ cliente.nome }}" required>
+            <label>Telefone:</label>
+            <input type="text" name="telefone" value="{{ cliente.telefone }}" required>
+            <label>Rua:</label>
+            <input type="text" name="rua" value="{{ cliente.rua }}">
+            <label>Número:</label>
+            <input type="text" name="numero" value="{{ cliente.numero }}">
+            <label>Bairro:</label>
+            <input type="text" name="bairro" value="{{ cliente.bairro }}">
+            <label>CEP:</label>
+            <input type="text" name="cep" value="{{ cliente.cep }}">
+            <button type="submit" class="botao-novo" style="margin-top: 20px; width: 100%;">Salvar Alterações</button>
+          </form>
+        </div>
+      </div>
+      {% empty %}
+      <p style="text-align:center; color: #6e0707;">Nenhum cliente encontrado.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script>
+    function abrirModal(id) {
+      document.getElementById('modal-' + id).style.display = 'flex';
+    }
+
+    function fecharModal(id) {
+      document.getElementById('modal-' + id).style.display = 'none';
+    }
+
+    function toggleMenu() {
+      const navbarMenu = document.querySelector('.navbar-menu');
+      navbarMenu.classList.toggle('show');
+    }
+
+    window.onclick = function(event) {
+      const modais = document.getElementsByClassName('modal');
+      for (let i = 0; i < modais.length; i++) {
+        if (event.target === modais[i]) {
+          modais[i].style.display = 'none';
+        }
+      }
+    }
+  </script>
+
+</body>
+</html>
