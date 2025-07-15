@@ -452,8 +452,6 @@
             cursor: pointer;
         }
 
-
-        /* Media queries para responsividade */
         @media (max-width: 900px) {
             .produtos-grid {
                 grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -558,11 +556,24 @@
 
     <div class="main-container">
         <div class="container-header">
-            <div>
-                <h2>Lista de Produtos</h2>
-                <p>Gerencie os produtos disponíveis na loja.</p>
+        <div>
+            <h2>Lista de Produtos</h2>
+            <p>Gerencie os produtos disponíveis na loja.</p>
+        </div>
+            {% if is_gerente %}
+                <a href="#" id="openCreateProductModal" class="btn-novo">
+                    Criar Novo Produto
+                </a>
+            {% endif %}
+        </div>
+
+        <div id="createProductModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                    <div id="create-modal-form-content">
+                        <p>Carregando formulário...</p>
+                    </div>
             </div>
-            <a href="{% url 'criar_produto' %}" class="btn-novo">+ Novo Produto</a>
         </div>
 
         <form class="form-busca" method="get">
@@ -602,6 +613,142 @@
     </div>
 
     <script>
+
+        // Lógica para abrir e fechar o modal de criação de produto
+        const createProductModal = document.getElementById('createProductModal');
+        const openCreateProductBtn = document.getElementById('openCreateProductModal');
+        const createModalFormContent = document.getElementById('create-modal-form-content');
+
+        if (openCreateProductBtn) { // Verifica se o botão existe (apenas para gerentes)
+            openCreateProductBtn.addEventListener('click', function(event) {
+                event.preventDefault(); // Evita a navegação da âncora
+                fetch("{% url 'criar_produto_modal' %}") // URL para carregar o formulário de criação
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response for create modal was not ok ' + response.statusText);
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        createModalFormContent.innerHTML = html;
+                        createProductModal.style.display = 'flex';
+                        initializeFileInputScript(createModalFormContent); // Passa o contexto para a função
+                        initializeModalButtons(createProductModal, createModalFormContent); // Passa os elementos para a função
+
+                        const createForm = createModalFormContent.querySelector('form');
+                        if (createForm) {
+                            createForm.addEventListener('submit', function(event) {
+                                event.preventDefault();
+                                const formData = new FormData(createForm);
+
+                                fetch(createForm.action, {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: {
+                                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                    }
+                                })
+                                .then(response => {
+                                    if (response.ok) {
+                                        return response.json();
+                                    }
+                                    return response.text().then(text => { throw new Error(text); });
+                                })
+                                .then(data => {
+                                    if (data.success) {
+                                        createProductModal.style.display = 'none';
+                                        location.reload(); // Recarrega a página após criação bem-sucedida
+                                    } else {
+                                        createModalFormContent.innerHTML = data.form_html;
+                                        initializeFileInputScript(createModalFormContent);
+                                        initializeModalButtons(createProductModal, createModalFormContent);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Erro ao criar o produto:', error);
+                                    alert('Ocorreu um erro ao criar o produto. Detalhes no console.');
+                                    if (error.message.startsWith('<') || error.message.includes('csrfmiddlewaretoken')) {
+                                        createModalFormContent.innerHTML = error.message;
+                                        initializeFileInputScript(createModalFormContent);
+                                        initializeModalButtons(createProductModal, createModalFormContent);
+                                    }
+                                });
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro ao carregar o formulário de criação:', error);
+                        createModalFormContent.innerHTML = '<p>Erro ao carregar o formulário de criação. Tente novamente.</p>';
+                    });
+            });
+
+            // Fechar o modal de criação clicando no 'x' ou fora dele
+            createProductModal.querySelector('.close-button').addEventListener('click', function() {
+                createProductModal.style.display = 'none';
+                createModalFormContent.innerHTML = '<p>Carregando formulário...</p>';
+            });
+
+            window.addEventListener('click', function(event) {
+                if (event.target == createProductModal) {
+                    createProductModal.style.display = 'none';
+                    createModalFormContent.innerHTML = '<p>Carregando formulário...</p>';
+                }
+            });
+        }
+
+
+
+        function initializeFileInputScript(contextElement) {
+            // Se nenhum contexto for fornecido, usa o documento inteiro como fallback
+            const parent = contextElement || document; 
+            const fileInput = parent.querySelector('input[type="file"]');
+            const fileNameDisplay = parent.querySelector('.file-input-display');
+            const currentImageWrapper = parent.querySelector('.current-image-wrapper');
+            const clearCheckbox = parent.querySelector('.image-clear-options input[type="checkbox"]');
+
+            if (fileInput && fileNameDisplay) {
+                function updateFileNameDisplay() {
+                    if (fileInput.files && fileInput.files.length > 0) {
+                        fileNameDisplay.textContent = fileInput.files[0].name;
+                        if (clearCheckbox) {
+                            clearCheckbox.checked = false;
+                        }
+                    } else if (clearCheckbox && clearCheckbox.checked) {
+                        fileNameDisplay.textContent = 'Imagem será removida';
+                    } else if (currentImageWrapper && currentImageWrapper.querySelector('img')) {
+                        const currentImageSrc = currentImageWrapper.querySelector('img').src;
+                        const fileName = currentImageSrc.split('/').pop();
+                        fileNameDisplay.textContent = fileName;
+                    } else {
+                        fileNameDisplay.textContent = 'Nenhum arquivo escolhido';
+                    }
+                }
+
+                updateFileNameDisplay(); 
+
+                fileInput.addEventListener('change', updateFileNameDisplay);
+                if (clearCheckbox) {
+                    clearCheckbox.addEventListener('change', updateFileNameDisplay);
+                }
+            }
+        }
+
+        function initializeModalButtons(modalElement, formContentElement) {
+            const cancelButtonModal = formContentElement.querySelector('.botao-cancelar');
+            if (cancelButtonModal) {
+                cancelButtonModal.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    modalElement.style.display = 'none';
+                    formContentElement.innerHTML = '<p>Carregando formulário...</p>';
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const editModal = document.getElementById('editProductModal');
+            const editModalFormContent = document.getElementById('modal-form-content');
+        });
+
         function toggleMenu() {
             const navbarMenu = document.querySelector('.navbar-menu');
             navbarMenu.classList.toggle('show');
@@ -656,7 +803,6 @@
                                     })
                                     .then(data => {
                                         if (data.success) {
-                                           
                                             modal.style.display = 'none'; // Fecha o modal
                                             // Recarrega a página para ver as mudanças (mais simples)
                                             location.reload(); 

@@ -7,6 +7,13 @@ from .models import Pedido, Cliente, Produto, PedidoProduto, Usuario
 from django.contrib import messages
 from django.contrib.auth import login as django_login, get_user_model
 from django.db import connection
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
+from django.template.loader import render_to_string
+
+def is_gerente(user):
+    
+    return user.groups.filter(name='Gerentes').exists() or user.is_superuser or user.username == 'admin'
 
 
 def menu(request):
@@ -111,14 +118,19 @@ def listar_cliente(request):
     
     return render(request, 'confeitaria/clientes.html', {'clientes': clientes})
 
+@login_required
 def listar_produto(request):
-    termo = request.GET.get('q', '')
-    if termo:
-        produtos = Produto.objects.filter(nome__icontains=termo)
-    else:
-        produtos = Produto.objects.all()
+    produtos = Produto.objects.all()
     
-    return render(request, 'confeitaria/interface_produto.html', {'produtos': produtos})
+    # Agora, esta chamada já considera o username 'admin'
+    usuario_eh_gerente = is_gerente(request.user)
+    
+    context = {
+        'produtos': produtos,
+        'is_gerente': usuario_eh_gerente,
+    }
+    
+    return render(request, 'confeitaria/interface_produto.html', context)
 
 
 def editar_produto(request, id): 
@@ -304,3 +316,31 @@ def remover_produto_do_pedido(request, id_pedido_produto):
     
     messages.warning(request, "Método não permitido para remover o produto. Use o botão de remover.")
     return redirect('adicionar_produto_ao_pedido', id_pedido=id_do_pedido_associado)
+
+
+
+@user_passes_test(is_gerente, login_url='/login/')
+def criar_produto_modal(request):
+    if request.method == 'POST':
+        form = ProdutoForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+        else:
+            
+            form_html = render_to_string(
+                'produtos/produto_form_modal.html',
+                {'form': form, 'title': 'Criar Novo Produto', 'is_ajax': True}, # is_ajax pode ser útil para condicionais no template
+                request=request
+            )
+            return JsonResponse({'success': False, 'form_html': form_html}, status=400) # Status 400 indica erro de cliente
+    else:
+        
+        form = ProdutoForm()
+    
+    form_html = render_to_string(
+        'produtos/produto_form_modal.html',
+        {'form': form, 'title': 'Criar Novo Produto', 'is_ajax': True},
+        request=request
+    )
+    return JsonResponse({'form_html': form_html})
