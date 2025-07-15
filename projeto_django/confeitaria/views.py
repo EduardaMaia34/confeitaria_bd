@@ -58,7 +58,6 @@ def criar_cliente(request):
 
 def adicionar_produto_ao_pedido(request, id_pedido):
     pedido = get_object_or_404(Pedido, id=id_pedido)
-    # Get all PedidoProduto objects related to this pedido
     itens_do_pedido = PedidoProduto.objects.filter(id_pedido=pedido)
 
     if request.method == 'POST':
@@ -302,7 +301,7 @@ def remover_produto_do_pedido(request, id_pedido_produto):
     pedido_produto = get_object_or_404(PedidoProduto, id=id_pedido_produto)
     
     # Guarda o ID do pedido antes de deletar o item, para redirecionar corretamente
-    id_do_pedido_associado = pedido_produto.id_pedido.id 
+    id_do_pedido_associado = pedido_produto.id_pedido.id
 
     if request.method == 'POST':
         try:
@@ -344,3 +343,14 @@ def criar_produto_modal(request):
         request=request
     )
     return JsonResponse({'form_html': form_html})
+
+
+def criar_usuario(request):
+    if request.method == 'POST':
+            form = UsuarioForm(request.POST, request.FILES)
+            if form.is_valid():
+                form.save()
+                return redirect('autenticar_login')
+    else:
+        form = ProdutoForm()
+    return render(request, 'confeitaria/cadastrar_usuario.html', {'form': form})

@@ -46,9 +46,7 @@ class PedidoProdutoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['id_produto'].queryset = Produto.objects.all()
-        # Change the empty_label for the dropdown:
-        self.fields['id_produto'].empty_label = "--- Selecione um produto ---" # Or "" to remove it completely
-        # This is the actual label shown next to the dropdown in the template
+        self.fields['id_produto'].empty_label = "--- Selecione um produto ---"
         self.fields['id_produto'].label = "Produto:"
 
 PedidoProdutoFormSet = inlineformset_factory(

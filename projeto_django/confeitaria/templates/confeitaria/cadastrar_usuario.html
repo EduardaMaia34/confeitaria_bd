@@ -160,7 +160,7 @@
         </div>
 
         <!-- Formulário -->
-        <form action="{% url 'autenticar_login' %}" class="login-form" method="post">
+        <form action="{% url 'criar_usuario' %}" class="login-form" method="post">
           {% csrf_token %}
           <div class="input-group">
             <input type="text" name="usuario" placeholder="Usuário" required>
@@ -168,8 +168,7 @@
           <div class="input-group">
             <input type="password" name="senha" placeholder="Senha" required>
           </div>
-          <button type="submit" class="login-btn">LOGIN</button>
-          <button type="button" class="register-btn" onclick="window.location.href='{% url 'criar_usuario' %}'">CADASTRAR USUÁRIO</button>
+          <button type="submit" class="login-btn">CRIAR USUARIO</button>
         </form>
       </div>
     </div>
