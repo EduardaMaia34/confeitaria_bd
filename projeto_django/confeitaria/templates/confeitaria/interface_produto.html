@@ -590,12 +590,15 @@
                 <p>{{ produto.descricao }}</p>
                 <div class="preco">R$ {{ produto.preco }}</div>
 
-                <button class="btn-edit open-edit-modal" data-produto-id="{{ produto.id }}">Editar</button>
+                {% if is_gerente %}
+                    <button class="btn-edit open-edit-modal" data-produto-id="{{ produto.id }}">Editar</button>
 
-                <form action="{% url 'deletar_produto' produto.id %}" method="post" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-del" onclick="return confirm('Deseja deletar {{ produto.nome }}?');">Deletar</button>
-                </form>
+                    <form action="{% url 'deletar_produto' produto.id %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-del" onclick="return confirm('Deseja deletar {{ produto.nome }}?');">Deletar</button>
+                    </form>
+                {% endif %}
+
             </div>
             {% empty %}
             <p>Nenhum produto encontrado.</p>
