@@ -53,7 +53,7 @@ PedidoProdutoFormSet = inlineformset_factory(
     Pedido,
     PedidoProduto,
     form=PedidoProdutoForm,
-    extra=1,
+    extra=0,
     can_delete=True,
     fields=('id_produto', 'quantidade',)
 )

@@ -132,7 +132,7 @@ def listar_produto(request):
     return render(request, 'confeitaria/interface_produto.html', context)
 
 
-def editar_produto(request, id): 
+def editar_produto(request, id):
     produto = get_object_or_404(Produto, id=id)
     
     if request.method == 'POST':
@@ -257,7 +257,17 @@ def editar_pedido(request, id):
                 messages.success(request, "Produtos do pedido atualizados com sucesso!")
                 return redirect('listar_pedidos')
             else:
+                
+                print("--- Formset Validation Errors ---")
+                print("Non-form errors:", item_formset.non_form_errors()) # Errors not tied to a specific form (e.g., total forms limit)
+                for i, form in enumerate(item_formset):
+                    if form.errors:
+                        print(f"Form {i} errors (Prefix: {form.prefix}):", form.errors)
+                        for field, errors in form.errors.items():
+                            print(f"  Field '{field}': {errors}")
+                print("---------------------------------")
                 messages.error(request, "Houve um erro ao salvar os produtos do pedido. Por favor, verifique os campos.")
+                
         elif 'remove_item' in request.POST:
             pedido_produto_id = request.POST.get('pedido_produto_id')
             if pedido_produto_id:
@@ -316,33 +326,6 @@ def remover_produto_do_pedido(request, id_pedido_produto):
     messages.warning(request, "Método não permitido para remover o produto. Use o botão de remover.")
     return redirect('adicionar_produto_ao_pedido', id_pedido=id_do_pedido_associado)
 
-
-
-@user_passes_test(is_gerente, login_url='/login/')
-def criar_produto_modal(request):
-    if request.method == 'POST':
-        form = ProdutoForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return JsonResponse({'success': True})
-        else:
-            
-            form_html = render_to_string(
-                'produtos/produto_form_modal.html',
-                {'form': form, 'title': 'Criar Novo Produto', 'is_ajax': True}, # is_ajax pode ser útil para condicionais no template
-                request=request
-            )
-            return JsonResponse({'success': False, 'form_html': form_html}, status=400) # Status 400 indica erro de cliente
-    else:
-        
-        form = ProdutoForm()
-    
-    form_html = render_to_string(
-        'produtos/produto_form_modal.html',
-        {'form': form, 'title': 'Criar Novo Produto', 'is_ajax': True},
-        request=request
-    )
-    return JsonResponse({'form_html': form_html})
 
 
 def criar_usuario(request):
