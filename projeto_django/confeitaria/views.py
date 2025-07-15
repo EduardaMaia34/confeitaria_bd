@@ -2,24 +2,30 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.contrib import messages
-from .forms import ProdutoForm, ClienteForm, PedidoForm, PedidoProdutoForm, UsuarioForm
+from .forms import ProdutoForm, ClienteForm, PedidoForm, PedidoProdutoForm, UsuarioForm, PedidoProdutoFormSet
 from .models import Pedido, Cliente, Produto, PedidoProduto, Usuario
-from django.contrib import messages
 from django.contrib.auth import login as django_login, get_user_model
 from django.db import connection
 from django.utils.dateparse import parse_date
-from django.db.models import Sum
+from django.db.models import Sum, Q
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.template.loader import render_to_string
+
+
+def is_gerente(user):
+    return user.groups.filter(name='Gerentes').exists() or user.is_superuser or user.username == 'admin'
 
 
 def menu(request):
     return render(request, 'confeitaria/menu.html')
 
+
 def criar_produto(request):
     if request.method == 'POST':
-        form = ProdutoForm(request.POST, request.FILES)  # Inclui request.FILES para upload de imagens
+        form = ProdutoForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            return redirect('listar_produto')  # ou uma página de sucesso
+            return redirect('listar_produto')
     else:
         form = ProdutoForm()
     return render(request, 'confeitaria/cadastrar_produto.html', {'form': form})
@@ -32,7 +38,6 @@ def criar_cliente(request):
             nome = form.cleaned_data['nome']
             telefone = form.cleaned_data['telefone']
 
-            # Verifica se já existe cliente com o mesmo nome e telefone
             if Cliente.objects.filter(nome=nome, telefone=telefone).exists():
                 messages.warning(request, "Cliente já existente.")
                 return render(request, 'confeitaria/cadastrar_cliente.html', {'form': form})
@@ -41,7 +46,7 @@ def criar_cliente(request):
                 form.save()
                 messages.success(request, "Cliente cadastrado com sucesso!")
                 return redirect('listar_cliente')
-            except Exception as e:
+            except Exception:
                 messages.error(request, "Erro: não foi possível cadastrar o cliente.")
         else:
             messages.warning(request, "Dados inválidos. Verifique os campos.")
@@ -51,20 +56,10 @@ def criar_cliente(request):
     return render(request, 'confeitaria/cadastrar_cliente.html', {'form': form})
 
 
-def criar_pedido(request):
-    if request.method == 'POST':
-        form = PedidoForm(request.POST)
-        if form.is_valid():
-            pedido = form.save()
-            return redirect('adicionar_produto_ao_pedido', id_pedido=pedido.id)
-    else:
-        form = PedidoForm()
-    return render(request, 'confeitaria/cadastrar_pedido.html', {'form': form})
-
-
 def adicionar_produto_ao_pedido(request, id_pedido):
     pedido = get_object_or_404(Pedido, id=id_pedido)
     produtos = Produto.objects.all()
+    itens_do_pedido = PedidoProduto.objects.filter(id_pedido=pedido)
 
     if request.method == 'POST':
         form = PedidoProdutoForm(request.POST)
@@ -72,33 +67,30 @@ def adicionar_produto_ao_pedido(request, id_pedido):
             pedido_produto = form.save(commit=False)
             pedido_produto.id_pedido = pedido
             pedido_produto.save()
+            messages.success(request, f"Produto '{pedido_produto.id_produto.nome}' adicionado com sucesso!")
             return redirect('adicionar_produto_ao_pedido', id_pedido=pedido.id)
+        else:
+            messages.error(request, "Erro ao adicionar produto. Verifique os dados.")
     else:
         form = PedidoProdutoForm()
 
     return render(request, 'confeitaria/adicionar_produto.html', {
         'pedido': pedido,
         'form': form,
-        'produtos': produtos
+        'produtos': produtos,
+        'itens_do_pedido': itens_do_pedido
     })
 
-
-def listar_pedidos(request):
-    pedidos = Pedido.objects.all().order_by('-data_pedido')
-    return render(request, 'confeitaria/interfacePedidos.html', {'pedidos': pedidos})
 
 def autenticar_login(request):
     if request.method == "POST":
         form = UsuarioForm(request.POST)
         if form.is_valid():
-            user_input  = request.POST.get('usuario')
-            pwd_input   = request.POST.get('senha')
+            user_input = request.POST.get('usuario')
+            pwd_input = request.POST.get('senha')
 
             with connection.cursor() as cur:
-                cur.execute(
-                    "SELECT senha FROM confeitaria_usuario WHERE usuario = %s",
-                    [user_input]
-                )
+                cur.execute("SELECT senha FROM confeitaria_usuario WHERE usuario = %s", [user_input])
                 row = cur.fetchone()
 
             if row and pwd_input == row[0]:
@@ -106,7 +98,7 @@ def autenticar_login(request):
                 django_user, _ = User.objects.get_or_create(
                     username=user_input, defaults={"is_active": True}
                 )
-                django_login(request, django_user)  # cria sessão
+                django_login(request, django_user)
                 return redirect("menu")
 
             messages.error(request, "Usuário ou senha incorretos.")
@@ -115,38 +107,51 @@ def autenticar_login(request):
 
     return render(request, "confeitaria/login.html", {"form": form})
 
+
 def listar_cliente(request):
     termo = request.GET.get('q', '')
     if termo:
         clientes = Cliente.objects.filter(nome__icontains=termo)
     else:
         clientes = Cliente.objects.all()
-    
+
     return render(request, 'confeitaria/interfaceClientes.html', {'clientes': clientes})
 
+
+@login_required
 def listar_produto(request):
-    termo = request.GET.get('q', '')
-    if termo:
-        produtos = Produto.objects.filter(nome__icontains=termo)
-    else:
-        produtos = Produto.objects.all()
-    
-    return render(request, 'confeitaria/interface_produto.html', {'produtos': produtos})
+    search_query = request.GET.get('q', '').strip()
+    produtos = Produto.objects.all()
+
+    if search_query:
+        produtos = produtos.filter(
+            Q(nome__icontains=search_query) | Q(descricao__icontains=search_query)
+        )
+
+    usuario_eh_gerente = is_gerente(request.user)
+
+    context = {
+        'produtos': produtos,
+        'is_gerente': usuario_eh_gerente,
+        'search_query': search_query,
+    }
+
+    return render(request, 'confeitaria/interface_produto.html', context)
 
 
-def editar_produto(request, id): 
+def editar_produto(request, id):
     produto = get_object_or_404(Produto, id=id)
-    
+
     if request.method == 'POST':
-        form = ProdutoForm(request.POST, request.FILES, instance=produto) 
+        form = ProdutoForm(request.POST, request.FILES, instance=produto)
         if form.is_valid():
             form.save()
-            return redirect('listar_produto') 
+            return redirect('listar_produto')
     else:
-       
         form = ProdutoForm(instance=produto)
 
     return render(request, 'confeitaria/editar_produto.html', {'form': form})
+
 
 def editar_produto_modal(request, id):
     produto = get_object_or_404(Produto, id=id)
@@ -157,22 +162,21 @@ def editar_produto_modal(request, id):
             form.save()
             return JsonResponse({'success': True})
         else:
-            return JsonResponse({'success': False, 'form_html': render(request, 'confeitaria/partials/produto_form_partial.html', {'form': form, 'produto': produto}).content.decode('utf-8')})
+            html = render_to_string('confeitaria/partials/produto_form_partial.html', {'form': form, 'produto': produto}, request=request)
+            return JsonResponse({'success': False, 'form_html': html})
     else:
         form = ProdutoForm(instance=produto)
-    
+
     return render(request, 'confeitaria/partials/produto_form_partial.html', {'form': form, 'produto': produto})
 
-    return render(request, 'confeitaria/editar_produto.html', {'form': form, 'produto': produto})
 
 def deletar_produto(request, id):
     produto = get_object_or_404(Produto, id=id)
 
     if request.method == "POST":
         produto.delete()
-        return redirect("listar_produto")          # volta para a lista
+        return redirect("listar_produto")
 
-    # GET → exibe confirmação
     return render(request, "confeitaria/deletar_produto.html", {"produto": produto})
 
 
@@ -183,21 +187,22 @@ def editar_cliente(request, id):
         form = ClienteForm(request.POST, instance=cliente)
         if form.is_valid():
             form.save()
-            return redirect('listar_cliente')  # Redireciona para listagem
+            return redirect('listar_cliente')
     else:
         form = ClienteForm(instance=cliente)
 
     return render(request, 'confeitaria/editar_cliente.html', {'form': form, 'cliente': cliente})
+
 
 def deletar_cliente(request, id):
     cliente = get_object_or_404(Cliente, id=id)
 
     if request.method == "POST":
         cliente.delete()
-        return redirect("listar_cliente")          # volta para a lista
+        return redirect("listar_cliente")
 
-    # GET → exibe confirmação
     return render(request, "confeitaria/deletar_cliente.html", {"cliente": cliente})
+
 
 def relatorio_vendas(request):
     data_inicial = request.GET.get('data_inicial')
@@ -221,3 +226,122 @@ def relatorio_vendas(request):
         'data_final': data_final,
         'total': total
     })
+
+
+def criar_pedido(request):
+    if request.method == 'POST':
+        form = PedidoForm(request.POST)
+        if form.is_valid():
+            pedido = form.save()
+            return redirect('adicionar_produto_ao_pedido', id_pedido=pedido.id)
+    else:
+        form = PedidoForm()
+    return render(request, 'confeitaria/cadastrar_pedido.html', {'form': form})
+
+
+def listar_pedidos(request):
+    q = request.GET.get('q', '')
+    if q:
+        pedidos = Pedido.objects.filter(cliente__nome__icontains=q).order_by('-data_pedido')
+    else:
+        pedidos = Pedido.objects.all().order_by('-data_pedido')
+
+    return render(request, 'confeitaria/interface_pedido.html', {'pedidos': pedidos})
+
+
+def editar_pedido(request, id):
+    pedido = get_object_or_404(Pedido, id=id)
+    add_product_form = PedidoProdutoForm()
+
+    if request.method == 'POST':
+        if 'add_new_product' in request.POST:
+            add_product_form = PedidoProdutoForm(request.POST)
+            if add_product_form.is_valid():
+                produto = add_product_form.cleaned_data['id_produto']
+                quantidade = add_product_form.cleaned_data['quantidade']
+
+                try:
+                    existente = PedidoProduto.objects.get(id_pedido=pedido, id_produto=produto)
+                    existente.quantidade += quantidade
+                    existente.save()
+                    messages.success(request, f"Quantidade do produto '{produto.nome}' atualizada.")
+                except PedidoProduto.DoesNotExist:
+                    novo = add_product_form.save(commit=False)
+                    novo.id_pedido = pedido
+                    novo.save()
+                    messages.success(request, f"Produto '{novo.id_produto.nome}' adicionado.")
+
+                return redirect('editar_pedido', id=pedido.id)
+            else:
+                messages.error(request, "Dados inválidos para adicionar produto.")
+
+        elif 'save_existing_items' in request.POST:
+            item_formset = PedidoProdutoFormSet(request.POST, instance=pedido)
+            if item_formset.is_valid():
+                item_formset.save()
+                messages.success(request, "Produtos atualizados com sucesso!")
+                return redirect('listar_pedidos')
+            else:
+                messages.error(request, "Erro ao salvar os produtos. Verifique os campos.")
+
+        elif 'remove_item' in request.POST:
+            pedido_produto_id = request.POST.get('pedido_produto_id')
+            if pedido_produto_id:
+                try:
+                    item = PedidoProduto.objects.get(id=pedido_produto_id, id_pedido=pedido)
+                    item.delete()
+                    messages.success(request, "Produto removido do pedido.")
+                    return redirect('editar_pedido', id=pedido.id)
+                except PedidoProduto.DoesNotExist:
+                    messages.error(request, "Produto não encontrado.")
+                except Exception as e:
+                    messages.error(request, f"Erro ao remover produto: {e}")
+            else:
+                messages.error(request, "ID do produto a ser removido não fornecido.")
+
+    item_formset = PedidoProdutoFormSet(instance=pedido)
+
+    return render(request, 'confeitaria/editar_pedido.html', {
+        'pedido': pedido,
+        'item_formset': item_formset,
+        'add_product_form': add_product_form,
+    })
+
+
+def deletar_pedido(request, id):
+    pedido = get_object_or_404(Pedido, id=id)
+
+    if request.method == "POST":
+        pedido.delete()
+        return redirect("listar_pedidos")
+
+    return render(request, "confeitaria/deletar_pedido.html", {"pedido": pedido})
+
+
+def remover_produto_do_pedido(request, id_pedido_produto):
+    pedido_produto = get_object_or_404(PedidoProduto, id=id_pedido_produto)
+    id_do_pedido = pedido_produto.id_pedido.id
+
+    if request.method == 'POST':
+        try:
+            pedido_produto.delete()
+            messages.success(request, "Produto removido do pedido com sucesso!")
+        except Exception as e:
+            messages.error(request, f"Erro ao remover produto: {e}")
+
+        return redirect('adicionar_produto_ao_pedido', id_pedido=id_do_pedido)
+
+    messages.warning(request, "Método inválido.")
+    return redirect('adicionar_produto_ao_pedido', id_pedido=id_do_pedido)
+
+
+def criar_usuario(request):
+    if request.method == 'POST':
+        form = UsuarioForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('autenticar_login')
+    else:
+        form = UsuarioForm()
+
+    return render(request, 'confeitaria/cadastrar_usuario.html', {'form': form})
