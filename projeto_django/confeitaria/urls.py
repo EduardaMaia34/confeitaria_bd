@@ -26,5 +26,4 @@ urlpatterns = [
     path('pedidos/<int:id>/editar/', views.editar_pedido, name='editar_pedido'),
     path('pedidos/<int:id>/deletar/', views.deletar_pedido, name='deletar_pedido'),
     
-    path('criar_produto_modal/', views.criar_produto_modal, name='criar_produto_modal'),
 ]

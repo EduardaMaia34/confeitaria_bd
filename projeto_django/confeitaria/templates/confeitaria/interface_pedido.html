@@ -22,6 +22,7 @@
         <th>Cliente</th>
         <th>Produtos</th>
         <th>Quantidades</th>
+        <th>Valor Total</th>
         <th class="text-end">Ações</th>
       </tr>
     </thead>
@@ -43,6 +44,7 @@
             {% endfor %}
           </ul>
         </td>
+        <td>R$ {{ pedido.valor_total|floatformat:2 }}</td>
         <td class="text-end">
           <a href="{% url 'editar_pedido' pedido.id %}" class="btn btn-sm btn-outline-secondary">Editar</a>
           <a href="{% url 'deletar_pedido' pedido.id %}" class="btn btn-sm btn-outline-danger ms-2">Excluir</a>

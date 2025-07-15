@@ -131,40 +131,78 @@
         <h3>Itens do Pedido</h3>
         <form method="post">
             {% csrf_token %}
-            {{ item_formset.management_form }} 
 
-            <div class="item-row header">
-                <span>Produto</span>
-                <span>Quantidade</span>
-                <span>Ações</span> {# Changed from "Apagar" to "Ações" for clarity #}
-            </div>
+            {{ item_formset.management_form }}
 
-            {% for item_form in item_formset %}
-                {% if item_form.instance.pk %} {# This ensures we only show existing items in this loop #}
-                    <div class="item-row">
-                        <span>{{ item_form.instance.id_produto.nome }}</span>
-                        <span>
-                            {{ item_form.quantidade }}
-                            {% if item_form.quantidade.errors %}<ul class="errorlist">{% for error in item_form.quantidade.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
-                        </span>
-                        <span>
-                            {# This form will submit to the same view, triggering the 'remove_item' logic #}
-                            <button type="submit" name="remove_item" value="remove" class="remove-item-button">Apagar</button>
-                            <input type="hidden" name="pedido_produto_id" value="{{ item_form.instance.id }}">
-                        </span>
-                        {{ item_form.id }} {# Hidden ID field for existing item (needed if you still use formset save but not delete checkbox) #}
-                        {{ item_form.DELETE }} {# Keep the delete checkbox hidden if you want to use it with JS or still allow formset's delete management #}
-                    </div>
-                {% endif %}
+            <h2>Itens do Pedido Existentes</h2>
+            {% for form in item_formset %}
+                <div class="pedido-produto-item" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 15px;">
+                    {# The hidden ID field for the PedidoProduto instance is essential #}
+                    {{ form.id }} 
+
+                    {# Display product name, and keep id_produto as a hidden field #}
+                    <p>
+                        <strong>Produto:</strong> 
+                        {% if form.instance.id %} {# Check if it's an existing instance #}
+                            {{ form.instance.id_produto.nome }}
+                            {{ form.id_produto.as_hidden }} {# Keep the id_produto value in a hidden input #}
+                        {% else %}
+                            {# This part is for new, empty forms if your formset allows adding, not strictly for 'save_existing_items' #}
+                            {{ form.id_produto.label_tag }} {{ form.id_produto }}
+                        {% endif %}
+                    </p>
+
+                    <p>
+                        <strong>Quantidade:</strong> 
+                        {{ form.quantidade }} {# This should be your input field #}
+                    </p>
+
+                    {# Display field-specific errors right next to the field #}
+                    {% if form.id_produto.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.id_produto.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if form.quantidade.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.quantidade.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    {# Non-field errors for this specific form in the formset (e.g., from clean() method) #}
+                    {% if form.non_field_errors %}
+                        <ul class="errorlist">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    
+                    {# If you allow deleting items via the formset, you'd also include: #}
+                    {# {{ form.DELETE }} <label for="{{ form.DELETE.id_for_label }}">Remover</label> #}
+
+                    <hr>
+                </div>
             {% endfor %}
 
-            {# This button saves changes to quantities of existing items #}
-            <p style="margin-top: 20px;">
-                <button type="submit" name="save_existing_items">Salvar Alteracoes</button>
-                <a href="{% url 'listar_pedidos' %}">Cancelar</a>
-            </p>
-        </form>
+            {# Display overall formset errors (e.g., if total forms exceeds max_num or min_num not met) #}
+            {% if item_formset.non_form_errors %}
+                <ul class="errorlist">
+                    {% for error in item_formset.non_form_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+    <button type="submit" name="save_existing_items" class="btn btn-primary">Salvar Alterações dos Itens</button>
+</form>
+
     </div>
 
 </body>
 </html>
+

@@ -561,7 +561,7 @@
             <p>Gerencie os produtos disponíveis na loja.</p>
         </div>
             {% if is_gerente %}
-                <a href="#" id="openCreateProductModal" class="btn-novo">
+                <a href="{% url 'criar_produto' %}" class="btn-novo">
                     Criar Novo Produto
                 </a>
             {% endif %}
@@ -625,7 +625,7 @@
         if (openCreateProductBtn) { // Verifica se o botão existe (apenas para gerentes)
             openCreateProductBtn.addEventListener('click', function(event) {
                 event.preventDefault(); // Evita a navegação da âncora
-                fetch("{% url 'criar_produto_modal' %}") // URL para carregar o formulário de criação
+                fetch("{% url 'criar_produto' %}") // URL para carregar o formulário de criação
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Network response for create modal was not ok ' + response.statusText);
