@@ -7,6 +7,7 @@ from .models import Pedido, Cliente, Produto, PedidoProduto, Usuario
 from django.contrib import messages
 from django.contrib.auth import login as django_login, get_user_model
 from django.db import connection
+<<<<<<< HEAD
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.template.loader import render_to_string
@@ -15,6 +16,10 @@ from django.db.models import Q
 def is_gerente(user):
     
     return user.groups.filter(name='Gerentes').exists() or user.is_superuser or user.username == 'admin'
+=======
+from django.utils.dateparse import parse_date
+from django.db.models import Sum
+>>>>>>> origin/developerKaren
 
 
 def menu(request):
@@ -56,16 +61,34 @@ def criar_cliente(request):
 
     return render(request, 'confeitaria/cadastrar_cliente.html', {'form': form})
 
+<<<<<<< HEAD
+=======
+
+def criar_pedido(request):
+    if request.method == 'POST':
+        form = PedidoForm(request.POST)
+        if form.is_valid():
+            pedido = form.save()
+            return redirect('adicionar_produto_ao_pedido', id_pedido=pedido.id)
+    else:
+        form = PedidoForm()
+    return render(request, 'confeitaria/cadastrar_pedido.html', {'form': form})
+>>>>>>> origin/developerKaren
+
 
 def adicionar_produto_ao_pedido(request, id_pedido):
     pedido = get_object_or_404(Pedido, id=id_pedido)
+<<<<<<< HEAD
     itens_do_pedido = PedidoProduto.objects.filter(id_pedido=pedido)
+=======
+    produtos = Produto.objects.all()
+>>>>>>> origin/developerKaren
 
     if request.method == 'POST':
         form = PedidoProdutoForm(request.POST)
         if form.is_valid():
             pedido_produto = form.save(commit=False)
-            pedido_produto.id_pedido = pedido  # associa ao pedido existente
+            pedido_produto.id_pedido = pedido
             pedido_produto.save()
             messages.success(request, f"Produto '{pedido_produto.id_produto.nome}' adicionado com sucesso!")
             # After saving, redirect to the same page to show the updated list
@@ -78,9 +101,20 @@ def adicionar_produto_ao_pedido(request, id_pedido):
     return render(request, 'confeitaria/adicionar_produto.html', {
         'pedido': pedido,
         'form': form,
+<<<<<<< HEAD
         'itens_do_pedido': itens_do_pedido, # <--- Pass the list of items
     })
 
+=======
+        'produtos': produtos
+    })
+
+
+def listar_pedidos(request):
+    pedidos = Pedido.objects.all().order_by('-data_pedido')
+    return render(request, 'confeitaria/interfacePedidos.html', {'pedidos': pedidos})
+
+>>>>>>> origin/developerKaren
 def autenticar_login(request):
     if request.method == "POST":
         form = UsuarioForm(request.POST)
@@ -116,7 +150,7 @@ def listar_cliente(request):
     else:
         clientes = Cliente.objects.all()
     
-    return render(request, 'confeitaria/clientes.html', {'clientes': clientes})
+    return render(request, 'confeitaria/interfaceClientes.html', {'clientes': clientes})
 
 @login_required
 def listar_produto(request):
@@ -205,6 +239,7 @@ def deletar_cliente(request, id):
     # GET → exibe confirmação
     return render(request, "confeitaria/deletar_cliente.html", {"cliente": cliente})
 
+<<<<<<< HEAD
 
 #PEDIDOS
 def criar_pedido(request):
@@ -346,3 +381,27 @@ def criar_usuario(request):
     else:
         form = ProdutoForm()
     return render(request, 'confeitaria/cadastrar_usuario.html', {'form': form})
+=======
+def relatorio_vendas(request):
+    data_inicial = request.GET.get('data_inicial')
+    data_final = request.GET.get('data_final')
+
+    vendas = Pedido.objects.all().order_by('-data_pedido')
+
+    if data_inicial and data_final:
+        try:
+            data_inicio = parse_date(data_inicial)
+            data_fim = parse_date(data_final)
+            vendas = vendas.filter(data_pedido__range=[data_inicio, data_fim])
+        except:
+            messages.warning(request, "Formato de data inválido.")
+
+    total = vendas.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
+
+    return render(request, 'confeitaria/relatorio_vendas.html', {
+        'vendas': vendas,
+        'data_inicial': data_inicial,
+        'data_final': data_final,
+        'total': total
+    })
+>>>>>>> origin/developerKaren
