@@ -27,24 +27,32 @@ class Cliente(models.Model):
         return self.nome
     
 
+from django.db import models
+
 class Pedido(models.Model):
     id = models.AutoField(primary_key=True)
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True)
     data_pedido = models.DateTimeField(auto_now_add=True)
     valor_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-
-    forma_pagamento = models.CharField(max_length=50, choices=[
+    MODALIDADE_CHOICES = [
+        ('loja', 'Consumo na Loja'),
+        ('retirada', 'Retirada'),
+    ]
+    modalidade = models.CharField(max_length=20, choices=MODALIDADE_CHOICES, default='loja')
+    data_retirada = models.DateTimeField(null=True, blank=True)
+    FORMA_PAGAMENTO_CHOICES = [
         ('dinheiro', 'Dinheiro'),
-        ('pix', 'Pix'),
-        ('debito', 'Cartão de Débito'),
-        ('credito', 'Cartão de Crédito'),
-    ],
-        default='pix'
-    )
-  
-    def __str__(self):
-        return f"Pedido #{self.id} - Cliente: {self.cliente.nome}"
+        ('cartao', 'Cartão'),
+        ('pix', 'PIX'),
+        ('boleto', 'Boleto'),
+    ]
+    forma_pagamento = models.CharField(max_length=20, choices=FORMA_PAGAMENTO_CHOICES, default='dinheiro')
+    em_preparo = models.BooleanField(default=True)
+    observacoes = models.TextField(blank=True, null=True)
 
+    def __str__(self):
+        return f"Pedido #{self.id} - {self.cliente.nome}"
+   
     def update_valor_total(self):
         total = self.itens_do_pedido.aggregate(
             total_sum=Sum(F('quantidade') * F('id_produto__preco'))
@@ -52,7 +60,6 @@ class Pedido(models.Model):
         
         self.valor_total = total if total is not None else 0.00
         self.save(update_fields=['valor_total'])
-
 
 class PedidoProduto(models.Model):
     id_pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='itens_do_pedido')
@@ -72,6 +79,27 @@ class PedidoProduto(models.Model):
 @receiver(post_delete, sender=PedidoProduto)
 def update_pedido_total_on_delete(sender, instance, **kwargs):
     instance.id_pedido.update_valor_total()
+
+class PedidoConcluido(models.Model):
+    id_original = models.IntegerField(unique=True) 
+    cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True)
+    data_pedido = models.DateTimeField()
+    modalidade = models.CharField(max_length=20, choices=Pedido.MODALIDADE_CHOICES)
+    data_retirada = models.DateTimeField(null=True, blank=True)
+    forma_pagamento = models.CharField(max_length=20, choices=Pedido.FORMA_PAGAMENTO_CHOICES)
+    observacoes = models.TextField(blank=True, null=True)
+    data_confirmacao = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Pedido Concluído #{self.id_original}"
+
+class PedidoConcluidoProduto(models.Model):
+    id_pedido_concluido = models.ForeignKey(PedidoConcluido, on_delete=models.CASCADE)
+    id_produto = models.ForeignKey('Produto', on_delete=models.SET_NULL, null=True)
+    quantidade = models.IntegerField()
+    
+    def __str__(self):
+        return f"{self.quantidade}x {self.id_produto.nome}"
 
 class Usuario(models.Model):
     id = models.AutoField(primary_key=True)

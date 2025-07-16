@@ -14,10 +14,12 @@ from django.template.loader import render_to_string, get_template
 from xhtml2pdf import pisa
 from io import BytesIO
 from django.http import HttpResponse
+import json
+from decimal import Decimal
+from datetime import datetime
 
 def is_gerente(user):
     return user.groups.filter(name='Gerentes').exists() or user.is_superuser or user.username == 'admin'
-
 
 def menu(request):
     return render(request, 'confeitaria/menu.html')
@@ -58,32 +60,146 @@ def criar_cliente(request):
 
     return render(request, 'confeitaria/cadastrar_cliente.html', {'form': form})
 
-
-def adicionar_produto_ao_pedido(request, id_pedido):
-    pedido = get_object_or_404(Pedido, id=id_pedido)
+def criar_pedido(request):
+    clientes = Cliente.objects.all()
     produtos = Produto.objects.all()
-    itens_do_pedido = PedidoProduto.objects.filter(id_pedido=pedido)
-
+    
     if request.method == 'POST':
-        form = PedidoProdutoForm(request.POST)
-        if form.is_valid():
-            pedido_produto = form.save(commit=False)
-            pedido_produto.id_pedido = pedido
-            pedido_produto.save()
-            messages.success(request, f"Produto '{pedido_produto.id_produto.nome}' adicionado com sucesso!")
-            return redirect('adicionar_produto_ao_pedido', id_pedido=pedido.id)
-        else:
-            messages.error(request, "Erro ao adicionar produto. Verifique os dados.")
-    else:
-        form = PedidoProdutoForm()
+        try:
+            dados_json = json.loads(request.body)
+            
+            cliente_id = dados_json.get('cliente')
+            modalidade = dados_json.get('modalidade')
+            # Lendo a data como string do JSON
+            data_retirada_str = dados_json.get('data_retirada')
+            forma_pagamento = dados_json.get('forma_pagamento')
+            observacoes = dados_json.get('observacoes')
+            em_preparo = True
+            itens_pedido = dados_json.get('pedido_items', [])
 
-    return render(request, 'confeitaria/adicionar_produto.html', {
-        'pedido': pedido,
-        'form': form,
-        'produtos': produtos,
-        'itens_do_pedido': itens_do_pedido
-    })
+            if not itens_pedido:
+                return JsonResponse({'success': False, 'error': 'Pelo menos um item é obrigatório.'}, status=400)
 
+            # === INÍCIO DA LÓGICA MODIFICADA PARA A DATA ===
+            data_retirada = None # Define o valor inicial como None (nulo)
+            if data_retirada_str: # Se a string da data não estiver vazia
+                try:
+                    # Converte a string para um objeto datetime.date
+                    data_retirada = datetime.strptime(data_retirada_str, '%Y-%m-%d').date()
+                except ValueError:
+                    return JsonResponse({'success': False, 'error': 'Formato de data de retirada inválido. Use YYYY-MM-DD.'}, status=400)
+            # === FIM DA LÓGICA MODIFICADA ===
+
+            with transaction.atomic():
+                cliente = Cliente.objects.get(pk=cliente_id) if cliente_id else None
+
+                pedido = Pedido.objects.create(
+                    cliente=cliente,
+                    modalidade=modalidade,
+                    data_retirada=data_retirada, # Usa a variável já tratada
+                    forma_pagamento=forma_pagamento,
+                    observacoes=observacoes,
+                    em_preparo=em_preparo
+                )
+
+                total = Decimal('0.00')
+                for item in itens_pedido:
+                    produto = Produto.objects.get(pk=item['id'])
+                    subtotal = produto.preco * item['quantidade']
+                    total += subtotal
+
+                    # Verifique o nome do seu modelo de item de pedido.
+                    # Se for PedidoProduto, mantenha como está.
+                    PedidoProduto.objects.create(
+                        id_pedido=pedido,
+                        id_produto=produto,
+                        quantidade=item['quantidade']
+                    )
+
+                if cliente:
+                    total *= Decimal('0.90')
+
+                pedido.valor_total = total
+                pedido.save()
+
+            return JsonResponse({'success': True, 'pedido_id': pedido.id})
+
+        except Cliente.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Cliente não encontrado.'}, status=404)
+        except Produto.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Produto não encontrado.'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Dados JSON inválidos.'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+            
+    context = {
+        'clientes': clientes,
+        'produtos': produtos
+    }
+    return render(request, 'confeitaria/cadastrar_pedido.html', context)
+
+def marcar_pronto(request, pedido_id):
+    if request.method == 'POST':
+        try:
+            pedido = get_object_or_404(Pedido, pk=pedido_id)
+            pedido.em_preparo = False
+            pedido.pago = False
+            pedido.save()
+            return JsonResponse({'success': True})
+        except Pedido.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Pedido não encontrado.'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
+
+
+
+def listar_pedidos(request):
+    # Busca todos os pedidos, sem nenhum filtro
+    pedidos = Pedido.objects.all().order_by('data_pedido')
+    context = {
+        'pedidos': pedidos
+    }
+    return render(request, 'confeitaria/lista_pedidos.html', context)
+
+def confirmar_pagamento(request, pedido_id):
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # 1. Busca o pedido original
+                pedido = get_object_or_404(Pedido, pk=pedido_id)
+
+                # 2. Cria o registro na tabela de pedidos concluídos, copiando os dados
+                pedido_concluido = PedidoConcluido.objects.create(
+                    id_original=pedido.id,
+                    cliente=pedido.cliente,
+                    data_pedido=pedido.data_pedido,
+                    modalidade=pedido.modalidade,
+                    data_retirada=pedido.data_retirada,
+                    forma_pagamento=pedido.forma_pagamento,
+                    observacoes=pedido.observacoes
+                )
+
+                # 3. Copia os itens do pedido para a nova tabela de produtos concluídos
+                for item in pedido.pedidoproduto_set.all():
+                    PedidoConcluidoProduto.objects.create(
+                        id_pedido_concluido=pedido_concluido,
+                        id_produto=item.id_produto,
+                        quantidade=item.quantidade
+                    )
+
+                # 4. Exclui o pedido original
+                pedido.delete()
+            
+            return JsonResponse({'success': True})
+
+        except Pedido.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Pedido não encontrado.'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
 
 def autenticar_login(request):
     if request.method == "POST":
