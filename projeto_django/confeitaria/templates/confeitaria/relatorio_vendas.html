@@ -75,13 +75,50 @@
       background-color: #fffaf0;
       border-radius: 16px;
       box-shadow: 0 0 5px #fcb1b0;
-      border: 2px solid #ffd7c9;
+      border-top: 1px solid #ffd7c9;
+      border-right: 4px solid #ffd7c9;
+      border-bottom: 4px solid #ffd7c9;
+      border-left: 1px solid #ffd7c9;
+    }
+
+    .topo-relatorio {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .topo-relatorio h2 {
+      grid-column: 2;
+      text-align: center;
+      margin: 0;
+    }
+
+    .topo-relatorio form {
+      grid-column: 3;
+      justify-self: end;
     }
 
     h2 {
-      text-align: center;
       font-size: 28px;
-      margin-bottom: 30px;
+      margin: 0;
+    }
+
+    .botao-relatorio {
+      background-color: #710100;
+      color: #fff8e6;
+      padding: 12px 24px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .botao-relatorio:hover {
+      background-color: #8b0000;
     }
 
     .filtros-relatorio {
@@ -105,20 +142,16 @@
       font-size: 16px;
     }
 
-    .botao-relatorio {
-      background-color: #710100;
-      color: #fff8e6;
-      padding: 12px 24px;
-      border-radius: 25px;
-      text-decoration: none;
-      font-weight: bold;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
+    .dados-resumo {
+      margin-bottom: 30px;
+      font-size: 16px;
+      color: #710100;
+      border-top: 1px solid #ffd7c9;
+      padding-top: 20px;
     }
 
-    .botao-relatorio:hover {
-      background-color: #8b0000;
+    .dados-resumo p {
+      margin: 6px 0;
     }
 
     .vendas-grid {
@@ -142,11 +175,19 @@
       color: #710100;
     }
 
-    .total-relatorio {
-      text-align: right;
-      font-size: 18px;
+    .mensagem-vazia {
+      text-align: center;
+      width: 100%;
       font-weight: bold;
+      font-size: 18px;
       color: #710100;
+      margin-bottom: 20px;
+    }
+
+    .pdf-botao {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
     }
 
     @media (max-width: 768px) {
@@ -171,12 +212,21 @@
       .menu-icon {
         display: block;
       }
+
+      .topo-relatorio {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .pdf-botao {
+        justify-content: center;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- NAVBAR -->
   <div class="navbar-container">
     <div class="navbar">
       <img src="{% static 'confeitaria/imagens/LogoBarra.png' %}" alt="Logo Petit Rose" class="navbar-logo">
@@ -192,34 +242,49 @@
     </div>
   </div>
 
-  <!-- CONTEÚDO -->
   <div class="container">
-    <h2>Relatório de Vendas</h2>
+
+    <div class="topo-relatorio">
+      <h2>Relatório de Vendas</h2>
+      <form method="get">
+        <button type="submit" class="botao-relatorio">Gerar Relatório</button>
+      </form>
+    </div>
 
     <form method="get" class="filtros-relatorio">
       <label for="data_inicio">Data Inicial:</label>
-      <input type="date" id="data_inicio" name="data_inicio" value="{{ request.GET.data_inicio }}">
+      <input type="date" id="data_inicio" name="data_inicial" value="{{ request.GET.data_inicial }}">
 
       <label for="data_fim">Data Final:</label>
-      <input type="date" id="data_fim" name="data_fim" value="{{ request.GET.data_fim }}">
-
-      <button type="submit" class="botao-relatorio">Gerar Relatório</button>
+      <input type="date" id="data_fim" name="data_final" value="{{ request.GET.data_final }}">
     </form>
 
+    <div class="dados-resumo">
+      <p><strong>Total de Vendas:</strong> R$ {{ total }}</p>
+      <p><strong>Total de Pedidos:</strong> {{ total_pedidos }}</p>
+      <p><strong>Itens Vendidos:</strong> {{ total_itens }}</p>
+      <p><strong>Ticket Médio:</strong> R$ {{ ticket_medio }}</p>
+    </div>
+
+    {% if vendas %}
     <div class="vendas-grid">
       {% for venda in vendas %}
       <div class="card-venda">
-        <p><strong>Data:</strong> {{ venda.data|date:"d/m/Y" }}</p>
-        <p><strong>Cliente:</strong> {{ venda.cliente }}</p>
-        <p><strong>Valor:</strong> R$ {{ venda.valor }}</p>
-        <p><strong>Pagamento:</strong> {{ venda.pagamento }}</p>
+        <p><strong>Data:</strong> {{ venda.data_pedido|date:"d/m/Y" }}</p>
+        <p><strong>Cliente:</strong> {{ venda.cliente.nome }}</p>
+        <p><strong>Valor:</strong> R$ {{ venda.valor_total }}</p>
+        <p><strong>Pagamento:</strong> {{ venda.forma_pagamento }}</p>
       </div>
-      {% empty %}
-      <p style="text-align: center;">Nenhuma venda encontrada no período.</p>
       {% endfor %}
     </div>
+    {% else %}
+    <p class="mensagem-vazia">Nenhuma venda encontrada no período.</p>
+    {% endif %}
 
-    <p class="total-relatorio">Total do Período: R$ {{ total }}</p>
+    <div class="pdf-botao">
+      <a href="{% url 'gerar_pdf_relatorio_vendas' %}?data_inicial={{ request.GET.data_inicial }}&data_final={{ request.GET.data_final }}" class="botao-relatorio" target="_blank">Gerar PDF</a>
+    </div>
+
   </div>
 
   <script>
