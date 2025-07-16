@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: DejaVu Sans, sans-serif;
+      background: #fff;
+      color: #6e0707;
+      margin: 40px;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      background-color: #fcb1b0;
+      padding: 10px 20px;
+      margin-bottom: 30px;
+    }
+
+    .top-bar img {
+      height: 80px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid #6e0707;
+      padding: 4px;
+    }
+
+    .top-bar .info {
+      flex-grow: 1;
+      text-align: center;
+      margin-right: 60px;
+    }
+
+    .top-bar .info h2 {
+      margin: 5px 0;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .top-bar .info .periodo {
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .secao {
+      background-color: #fcb1b0;
+      padding: 8px 15px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #6e0707;
+      margin-top: 30px;
+      margin-bottom: 10px;
+    }
+
+    .resumo {
+      margin-left: 15px;
+    }
+
+    .resumo ul {
+      list-style-type: disc;
+      margin-left: 20px;
+    }
+
+    .resumo li {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      border: 2px solid #6e0707;
+      padding: 8px;
+      text-align: left;
+    }
+
+    thead tr {
+      background-color: #fcb1b0;
+      color: #6e0707;
+    }
+
+    .sem-dados {
+      text-align: center;
+      font-style: italic;
+      margin-top: 30px;
+      color: #6e0707;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topo com logo e título/período -->
+  <div class="top-bar">
+    <img src="{{ STATIC_ROOT }}/confeitaria/imagens/LogoBarra.png" alt="Logo Petit Rose">
+    <div class="info">
+      <h2>Relatório de Vendas - Confeitaria Petit Rose</h2>
+      <div class="periodo">Período: {{ data_inicial }} a {{ data_final }}</div>
+    </div>
+  </div>
+
+  {% if vendas %}
+  
+  <!-- Resumo Geral -->
+  <div class="secao">Resumo Geral</div>
+  <div class="resumo">
+    <ul>
+      <li>Total de Vendas: R$ {{ total }}</li>
+      <li>Total de Pedidos: {{ vendas|length }}</li>
+      <li>Itens Vendidos: {{ total_itens }}</li>
+      <li>Ticket Médio: R$ {{ ticket_medio }}</li>
+    </ul>
+  </div>
+
+  <!-- Análise por Dia -->
+  <div class="secao">Análise por Dia</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Cliente</th>
+        <th>Valor (R$)</th>
+        <th>Forma de pagamento</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for venda in vendas %}
+      <tr>
+        <td>{{ venda.data_pedido|date:"d/m/Y" }}</td>
+        <td>{{ venda.cliente.nome }}</td>
+        <td>{{ venda.valor_total|floatformat:2 }}</td>
+        <td>{{ venda.forma_pagamento|capfirst }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% else %}
+    <p class="sem-dados">Nenhuma venda encontrada no período.</p>
+  {% endif %}
+
+</body>
+</html>

@@ -23,13 +23,10 @@ urlpatterns = [
     path('pedido/<int:id_pedido>/adicionar_produto/', views.adicionar_produto_ao_pedido, name='adicionar_produto_ao_pedido'),
     path('pedido_produto/remover/<int:id_pedido_produto>/', views.remover_produto_do_pedido, name='remover_produto_do_pedido'),
     path('pedidos/', views.listar_pedidos, name='listar_pedidos'),
-<<<<<<< HEAD
+
     path('pedidos/<int:id>/editar/', views.editar_pedido, name='editar_pedido'),
     path('pedidos/<int:id>/deletar/', views.deletar_pedido, name='deletar_pedido'),
     
-=======
-
-     # ✅ NOVA ROTA DO RELATÓRIO
     path('relatorios/vendas/', views.relatorio_vendas, name='relatorio_vendas'),
->>>>>>> origin/developerKaren
+
 ]
