@@ -29,9 +29,13 @@ class ClienteForm(forms.ModelForm):
         return self.nome
 
 class PedidoForm(forms.ModelForm):
+    data_retirada = forms.DateTimeField(
+        input_formats=['%d/%m/%Y'],
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'})
+    )
     class Meta:
         model = Pedido
-        fields = ['cliente']  # data_pedido é automático
+        fields = '__all__'
     def __str__(self):
         return f"Pedido #{self.id} - {self.cliente.nome} - {self.data_pedido.strftime('%d/%m/%Y %H:%M')}"
 
