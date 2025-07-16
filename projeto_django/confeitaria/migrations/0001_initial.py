@@ -22,6 +22,11 @@ class Migration(migrations.Migration):
                 ('numero', models.CharField(default='', max_length=10)),
                 ('bairro', models.CharField(default='', max_length=50)),
                 ('cep', models.CharField(default='', max_length=9)),
+                ('telefone', models.CharField(default='', max_length=15)),
+                ('rua', models.CharField(default='', max_length=100)),
+                ('numero', models.CharField(default='', max_length=10)),
+                ('bairro', models.CharField(default='', max_length=50)),
+                ('cep', models.CharField(default='', max_length=9)),
             ],
         ),
         migrations.CreateModel(
