@@ -68,7 +68,6 @@
       color: #710100;
     }
 
-    /* CONTAINER */
     .container {
       max-width: 1100px;
       margin: 40px auto;
@@ -82,7 +81,6 @@
       border-left: 1px solid #ffd7c9;
     }
 
-
     .topo-relatorio {
       display: grid;
       grid-template-columns: 1fr auto 1fr;
@@ -90,16 +88,17 @@
       margin-bottom: 30px;
       position: relative;
     }
+
     .topo-relatorio h2 {
       grid-column: 2;
       text-align: center;
       margin: 0;
     }
+
     .topo-relatorio form {
       grid-column: 3;
       justify-self: end;
     }
-
 
     h2 {
       font-size: 28px;
@@ -143,6 +142,18 @@
       font-size: 16px;
     }
 
+    .dados-resumo {
+      margin-bottom: 30px;
+      font-size: 16px;
+      color: #710100;
+      border-top: 1px solid #ffd7c9;
+      padding-top: 20px;
+    }
+
+    .dados-resumo p {
+      margin: 6px 0;
+    }
+
     .vendas-grid {
       display: flex;
       flex-wrap: wrap;
@@ -164,11 +175,13 @@
       color: #710100;
     }
 
-    .total-relatorio {
-      text-align: right;
-      font-size: 18px;
+    .mensagem-vazia {
+      text-align: center;
+      width: 100%;
       font-weight: bold;
+      font-size: 18px;
       color: #710100;
+      margin-bottom: 20px;
     }
 
     .pdf-botao {
@@ -214,7 +227,6 @@
 </head>
 <body>
 
-  <!-- NAVBAR -->
   <div class="navbar-container">
     <div class="navbar">
       <img src="{% static 'confeitaria/imagens/LogoBarra.png' %}" alt="Logo Petit Rose" class="navbar-logo">
@@ -230,7 +242,6 @@
     </div>
   </div>
 
-  <!-- CONTEÚDO -->
   <div class="container">
 
     <div class="topo-relatorio">
@@ -248,6 +259,14 @@
       <input type="date" id="data_fim" name="data_final" value="{{ request.GET.data_final }}">
     </form>
 
+    <div class="dados-resumo">
+      <p><strong>Total de Vendas:</strong> R$ {{ total }}</p>
+      <p><strong>Total de Pedidos:</strong> {{ total_pedidos }}</p>
+      <p><strong>Itens Vendidos:</strong> {{ total_itens }}</p>
+      <p><strong>Ticket Médio:</strong> R$ {{ ticket_medio }}</p>
+    </div>
+
+    {% if vendas %}
     <div class="vendas-grid">
       {% for venda in vendas %}
       <div class="card-venda">
@@ -256,12 +275,11 @@
         <p><strong>Valor:</strong> R$ {{ venda.valor_total }}</p>
         <p><strong>Pagamento:</strong> {{ venda.forma_pagamento }}</p>
       </div>
-      {% empty %}
-      <p style="text-align: center;">Nenhuma venda encontrada no período.</p>
       {% endfor %}
     </div>
-
-    <p class="total-relatorio">Total do Período: R$ {{ total }}</p>
+    {% else %}
+    <p class="mensagem-vazia">Nenhuma venda encontrada no período.</p>
+    {% endif %}
 
     <div class="pdf-botao">
       <a href="{% url 'gerar_pdf_relatorio_vendas' %}?data_inicial={{ request.GET.data_inicial }}&data_final={{ request.GET.data_final }}" class="botao-relatorio" target="_blank">Gerar PDF</a>
