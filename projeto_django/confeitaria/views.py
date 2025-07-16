@@ -6,18 +6,17 @@ from .forms import ProdutoForm, ClienteForm, PedidoForm, PedidoProdutoForm, Usua
 from .models import Pedido, Cliente, Produto, PedidoProduto, Usuario
 from django.contrib.auth import login as django_login, get_user_model
 from django.db import connection
-
+from django.utils.timezone import now
 from django.utils.dateparse import parse_date
-from django.db.models import Sum
-
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.decorators import user_passes_test
-from django.template.loader import render_to_string
-from django.db.models import Q
+from django.db.models import Sum, Q
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.template.loader import render_to_string, get_template
+from xhtml2pdf import pisa
+from io import BytesIO
+from django.http import HttpResponse
 
 def is_gerente(user):
     return user.groups.filter(name='Gerentes').exists() or user.is_superuser or user.username == 'admin'
-
 
 
 def menu(request):
@@ -60,25 +59,10 @@ def criar_cliente(request):
     return render(request, 'confeitaria/cadastrar_cliente.html', {'form': form})
 
 
-def criar_pedido(request):
-    if request.method == 'POST':
-        form = PedidoForm(request.POST)
-        if form.is_valid():
-            pedido = form.save()
-            return redirect('adicionar_produto_ao_pedido', id_pedido=pedido.id)
-    else:
-        form = PedidoForm()
-    return render(request, 'confeitaria/cadastrar_pedido.html', {'form': form})
-
-
-
 def adicionar_produto_ao_pedido(request, id_pedido):
     pedido = get_object_or_404(Pedido, id=id_pedido)
-
     produtos = Produto.objects.all()
-
     itens_do_pedido = PedidoProduto.objects.filter(id_pedido=pedido)
-
 
     if request.method == 'POST':
         form = PedidoProdutoForm(request.POST)
@@ -96,14 +80,9 @@ def adicionar_produto_ao_pedido(request, id_pedido):
     return render(request, 'confeitaria/adicionar_produto.html', {
         'pedido': pedido,
         'form': form,
-        'produtos': produtos
+        'produtos': produtos,
+        'itens_do_pedido': itens_do_pedido
     })
-
-
-def listar_pedidos(request):
-    pedidos = Pedido.objects.all().order_by('-data_pedido')
-    return render(request, 'confeitaria/interfacePedidos.html', {'pedidos': pedidos})
-
 
 
 def autenticar_login(request):
@@ -227,7 +206,6 @@ def deletar_cliente(request, id):
 
     return render(request, "confeitaria/deletar_cliente.html", {"cliente": cliente})
 
-
 def relatorio_vendas(request):
     data_inicial = request.GET.get('data_inicial')
     data_final = request.GET.get('data_final')
@@ -235,24 +213,31 @@ def relatorio_vendas(request):
     vendas = Pedido.objects.all().order_by('-data_pedido')
 
     if data_inicial and data_final:
-        try:
-            data_inicio = parse_date(data_inicial)
-            data_fim = parse_date(data_final)
-            vendas = vendas.filter(data_pedido__range=[data_inicio, data_fim])
-        except:
-            messages.warning(request, "Formato de data inválido.")
+        data_inicio = parse_date(data_inicial)
+        data_fim = parse_date(data_final)
+
+        if data_inicio and data_fim:
+            vendas = vendas.filter(data_pedido__date__range=(data_inicio, data_fim))
 
     total = vendas.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
+    total_pedidos = vendas.count()
 
-    return render(request, 'confeitaria/relatorio_vendas.html', {
+    total_itens = PedidoProduto.objects.filter(id_pedido__in=vendas).aggregate(
+        total=Sum('quantidade')
+    )['total'] or 0
+
+    ticket_medio = round(total / total_pedidos, 2) if total_pedidos else 0
+
+    context = {
         'vendas': vendas,
-        'data_inicial': data_inicial,
-        'data_final': data_final,
-        'total': total
-    })
+        'total': total,
+        'total_pedidos': total_pedidos,
+        'total_itens': total_itens,
+        'ticket_medio': ticket_medio,
+    }
 
+    return render(request, 'confeitaria/relatorio_vendas.html', context)
 
-#PEDIDOS
 def criar_pedido(request):
     if request.method == 'POST':
         form = PedidoForm(request.POST)
@@ -371,3 +356,100 @@ def criar_usuario(request):
 
     return render(request, 'confeitaria/cadastrar_usuario.html', {'form': form})
 
+def gerar_pdf_relatorio_vendas(request):
+    data_inicial = request.GET.get('data_inicial')
+    data_final = request.GET.get('data_final')
+
+    vendas = Pedido.objects.all().order_by('data_pedido')
+
+    if data_inicial and data_final:
+        try:
+            data_inicio = parse_date(data_inicial)
+            data_fim = parse_date(data_final)
+            if data_inicio and data_fim:
+                vendas = vendas.filter(data_pedido__date__range=[data_inicio, data_fim])
+        except:
+            vendas = Pedido.objects.none()
+
+    total = vendas.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
+    total_pedidos = vendas.count()
+
+    total_itens = PedidoProduto.objects.filter(id_pedido__in=vendas).aggregate(
+        total=Sum('quantidade')
+    )['total'] or 0
+
+    ticket_medio = round(total / total_pedidos, 2) if total_pedidos else 0
+
+    context = {
+        'vendas': vendas,
+        'data_inicial': datetime.strptime(data_inicial, "%Y-%m-%d").strftime("%d/%m/%Y") if data_inicial else "",
+        'data_final': datetime.strptime(data_final, "%Y-%m-%d").strftime("%d/%m/%Y") if data_final else "",
+        'total': f"{total:.2f}",
+        'total_itens': total_itens,
+        'ticket_medio': f"{ticket_medio:.2f}",
+        'agora': now()
+    }
+
+    template = get_template('confeitaria/pdf_relatorio_vendas.html')
+    html = template.render(context)
+
+    response = BytesIO()
+    pisa_status = pisa.CreatePDF(html.encode('utf-8'), dest=response, encoding='utf-8')
+
+    if pisa_status.err:
+        return HttpResponse('Erro ao gerar PDF', status=500)
+
+    response.seek(0)
+    return HttpResponse(response, content_type='application/pdf')
+
+def marcar_pronto(request, pedido_id):
+    if request.method == 'POST':
+        try:
+            pedido = get_object_or_404(Pedido, pk=pedido_id)
+            pedido.em_preparo = False
+            pedido.pago = False
+            pedido.save()
+            return JsonResponse({'success': True})
+        except Pedido.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Pedido não encontrado.'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
+
+def confirmar_pagamento(request, pedido_id):
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # 1. Busca o pedido original
+                pedido = get_object_or_404(Pedido, pk=pedido_id)
+
+                # 2. Cria o registro na tabela de pedidos concluídos, copiando os dados
+                pedido_concluido = PedidoConcluido.objects.create(
+                    id_original=pedido.id,
+                    cliente=pedido.cliente,
+                    data_pedido=pedido.data_pedido,
+                    modalidade=pedido.modalidade,
+                    data_retirada=pedido.data_retirada,
+                    forma_pagamento=pedido.forma_pagamento,
+                    observacoes=pedido.observacoes
+                )
+
+                # 3. Copia os itens do pedido para a nova tabela de produtos concluídos
+                for item in pedido.pedidoproduto_set.all():
+                    PedidoConcluidoProduto.objects.create(
+                        id_pedido_concluido=pedido_concluido,
+                        id_produto=item.id_produto,
+                        quantidade=item.quantidade
+                    )
+
+                # 4. Exclui o pedido original
+                pedido.delete()
+            
+            return JsonResponse({'success': True})
+
+        except Pedido.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Pedido não encontrado.'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)

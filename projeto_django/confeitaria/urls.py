@@ -19,9 +19,16 @@ urlpatterns = [
     path('clientes/<int:id>/editar/', views.editar_cliente, name='editar_cliente'),
     path('clientes/<int:id>/deletar/', views.deletar_cliente,name='deletar_cliente'),
     
-    path('pedido/cadastro/', views.criar_pedido, name='criar_pedido'), 
+    path('pedido/cadastro', views.criar_pedido, name='criar_pedido'),
+    path('pedido/<int:id_pedido>/adicionar_produto/', views.adicionar_produto_ao_pedido, name='adicionar_produto_ao_pedido'),
+    path('pedido_produto/remover/<int:id_pedido_produto>/', views.remover_produto_do_pedido, name='remover_produto_do_pedido'),
     path('pedidos/', views.listar_pedidos, name='listar_pedidos'),
-    path('pedido/<int:pedido_id>/marcar_pronto/', views.marcar_pronto, name='marcar_pronto'),
-    path('pedido/<int:pedido_id>/concluir/', views.confirmar_pagamento, name='confirmar_pagamento'),
 
-]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # ✅ NOVA ROTA DO RELATÓRIO
+    path('relatorios/vendas/', views.relatorio_vendas, name='relatorio_vendas'),
+    path('relatorios/gerar_pdf/', views.gerar_pdf_relatorio_vendas, name='gerar_pdf_relatorio_vendas'),
+
+    path('pedidos/<int:id>/editar/', views.editar_pedido, name='editar_pedido'),
+    path('pedidos/<int:id>/deletar/', views.deletar_pedido, name='deletar_pedido'),
+    
+]
