@@ -26,6 +26,7 @@ urlpatterns = [
 
      # ✅ NOVA ROTA DO RELATÓRIO
     path('relatorios/vendas/', views.relatorio_vendas, name='relatorio_vendas'),
+    path('relatorios/gerar_pdf/', views.gerar_pdf_relatorio_vendas, name='gerar_pdf_relatorio_vendas'),
 
     path('pedidos/<int:id>/editar/', views.editar_pedido, name='editar_pedido'),
     path('pedidos/<int:id>/deletar/', views.deletar_pedido, name='deletar_pedido'),

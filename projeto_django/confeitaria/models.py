@@ -38,7 +38,9 @@ class Pedido(models.Model):
         ('pix', 'Pix'),
         ('debito', 'Cartão de Débito'),
         ('credito', 'Cartão de Crédito'),
-    ])
+    ],
+        default='pix'
+    )
   
     def __str__(self):
         return f"Pedido #{self.id} - Cliente: {self.cliente.nome}"
