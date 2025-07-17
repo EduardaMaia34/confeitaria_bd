@@ -372,7 +372,7 @@ def listar_pedidos(request):
     else:
         pedidos = Pedido.objects.all().order_by('-data_pedido')
 
-    return render(request, 'confeitaria/interface_pedido.html', {'pedidos': pedidos})
+    return render(request, 'confeitaria/lista_pedidos.html', {'pedidos': pedidos})
 
 
 def editar_pedido(request, id):
@@ -489,11 +489,9 @@ def gerar_pdf_relatorio_vendas(request):
 
     total = vendas.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
     total_pedidos = vendas.count()
-
     total_itens = PedidoProduto.objects.filter(id_pedido__in=vendas).aggregate(
         total=Sum('quantidade')
     )['total'] or 0
-
     ticket_medio = round(total / total_pedidos, 2) if total_pedidos else 0
 
     context = {
@@ -503,7 +501,7 @@ def gerar_pdf_relatorio_vendas(request):
         'total': f"{total:.2f}",
         'total_itens': total_itens,
         'ticket_medio': f"{ticket_medio:.2f}",
-        'agora': now()
+        'data_atual': now()  # Para exibir no rodapé
     }
 
     template = get_template('confeitaria/pdf_relatorio_vendas.html')

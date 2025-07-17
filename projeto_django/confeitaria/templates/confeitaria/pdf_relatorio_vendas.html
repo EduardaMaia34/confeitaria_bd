@@ -5,72 +5,80 @@
   <style>
     body {
       font-family: DejaVu Sans, sans-serif;
-      background: #fff;
       color: #6e0707;
       margin: 40px;
+      background: #fff;
     }
 
+    /* Topo com logo e título */
     .top-bar {
       display: flex;
       align-items: center;
+      justify-content: flex-start;
       background-color: #fcb1b0;
       padding: 10px 20px;
+      border-radius: 5px;
       margin-bottom: 30px;
     }
 
     .top-bar img {
       height: 80px;
+      width: 80px;
       border-radius: 50%;
       background: #fff;
       border: 2px solid #6e0707;
-      padding: 4px;
+      margin-right: 20px;
     }
 
-    .top-bar .info {
+    .info {
       flex-grow: 1;
       text-align: center;
-      margin-right: 60px;
     }
 
-    .top-bar .info h2 {
+    .info h2 {
       margin: 5px 0;
       font-size: 20px;
       font-weight: bold;
     }
 
-    .top-bar .info .periodo {
+    .info .periodo {
       font-size: 14px;
       font-weight: bold;
+      margin-top: 4px;
     }
 
+    /* Seções */
     .secao {
       background-color: #fcb1b0;
       padding: 8px 15px;
       font-size: 16px;
       font-weight: bold;
       color: #6e0707;
-      margin-top: 30px;
-      margin-bottom: 10px;
+      margin-top: 20px;
+      border-radius: 3px;
     }
 
+    /* Resumo */
     .resumo {
-      margin-left: 15px;
+      margin: 10px 0 20px 10px;
     }
 
     .resumo ul {
       list-style-type: disc;
       margin-left: 20px;
+      font-size: 14px;
     }
 
     .resumo li {
       margin-bottom: 6px;
-      font-size: 14px;
     }
 
+    /* Tabela */
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 15px;
+      font-size: 14px;
     }
 
     th, td {
@@ -91,11 +99,19 @@
       color: #6e0707;
       font-weight: 600;
     }
+
+    /* Rodapé */
+    .rodape {
+      text-align: center;
+      font-size: 12px;
+      color: #6e0707;
+      margin-top: 40px;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Topo com logo e título/período -->
+  <!-- Topo -->
   <div class="top-bar">
     <img src="{{ STATIC_ROOT }}/confeitaria/imagens/LogoBarra.png" alt="Logo Petit Rose">
     <div class="info">
@@ -105,44 +121,47 @@
   </div>
 
   {% if vendas %}
-  
-  <!-- Resumo Geral -->
-  <div class="secao">Resumo Geral</div>
-  <div class="resumo">
-    <ul>
-      <li>Total de Vendas: R$ {{ total }}</li>
-      <li>Total de Pedidos: {{ vendas|length }}</li>
-      <li>Itens Vendidos: {{ total_itens }}</li>
-      <li>Ticket Médio: R$ {{ ticket_medio }}</li>
-    </ul>
-  </div>
+    <!-- Resumo Geral -->
+    <div class="secao">Resumo Geral</div>
+    <div class="resumo">
+      <ul>
+        <li>Total de Vendas: R$ {{ total }}</li>
+        <li>Total de Pedidos: {{ vendas|length }}</li>
+        <li>Itens Vendidos: {{ total_itens }}</li>
+        <li>Ticket Médio: R$ {{ ticket_medio }}</li>
+      </ul>
+    </div>
 
-  <!-- Análise por Dia -->
-  <div class="secao">Análise por Dia</div>
-  <table>
-    <thead>
-      <tr>
-        <th>Data</th>
-        <th>Cliente</th>
-        <th>Valor (R$)</th>
-        <th>Forma de pagamento</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for venda in vendas %}
-      <tr>
-        <td>{{ venda.data_pedido|date:"d/m/Y" }}</td>
-        <td>{{ venda.cliente.nome }}</td>
-        <td>{{ venda.valor_total|floatformat:2 }}</td>
-        <td>{{ venda.forma_pagamento|capfirst }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
+    <!-- Análise por Dia -->
+    <div class="secao">Análise por Dia</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Cliente</th>
+          <th>Valor (R$)</th>
+          <th>Forma de pagamento</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for venda in vendas %}
+        <tr>
+          <td>{{ venda.data_pedido|date:"d/m/Y" }}</td>
+          <td>{{ venda.cliente.nome }}</td>
+          <td>{{ venda.valor_total|floatformat:2 }}</td>
+          <td>{{ venda.forma_pagamento|capfirst }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   {% else %}
     <p class="sem-dados">Nenhuma venda encontrada no período.</p>
   {% endif %}
+
+  <!-- Rodapé -->
+  <div class="rodape">
+    Relatório gerado em: {{ data_atual|date:"d/m/Y H:i" }}
+  </div>
 
 </body>
 </html>
