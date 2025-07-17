@@ -91,3 +91,21 @@ class Usuario(models.Model):
     senha = models.CharField(max_length = 50)
     def __str__(self):
         return self.usuario
+    
+class VendaComCliente(models.Model):
+    # Campos da sua view, com o nome que você definiu no SQL
+    id = models.IntegerField(primary_key=True)
+    data_pedido = models.DateTimeField()
+    valor_total = models.DecimalField(max_digits=10, decimal_places=2)
+    modalidade = models.CharField(max_length=50)
+    data_retirada = models.DateField(null=True, blank=True)
+    forma_pagamento = models.CharField(max_length=50)
+    observacoes = models.TextField(blank=True, null=True)
+    cliente_id = models.IntegerField(null=True, blank=True)
+    id_original = models.IntegerField()
+    cliente_nome = models.CharField(max_length=100, null=True)
+    cliente_telefone = models.CharField(max_length=15, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'confeitaria_vendas_com_clientes'

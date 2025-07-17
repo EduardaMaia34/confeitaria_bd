@@ -15,8 +15,9 @@ from io import BytesIO
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 
-# Importa os modelos que estão faltando
-from .models import Pedido, Produto, Cliente, PedidoProduto, PedidoConcluido, PedidoConcluidoProduto
+
+# Importa os modelos que estão faltando e o novo modelo da visão
+from .models import Pedido, Produto, Cliente, PedidoConcluido, PedidoConcluidoProduto, VendaComCliente
 from .forms import ProdutoForm, ClienteForm, UsuarioForm
 
 
@@ -27,7 +28,64 @@ def is_gerente(user):
 def menu(request):
     return render(request, 'confeitaria/menu.html')
 
+@login_required
+def menu_usuario(request):
+    pedidos_pendentes = Pedido.objects.filter(modalidade='retirada').order_by('-data_pedido')
+    
+    total_pedidos = PedidoConcluido.objects.count()
+    lucro_bruto = PedidoConcluido.objects.aggregate(Sum('valor_total'))['valor_total__sum']
+    
+    lucro_bruto_formatado = f"R$ {Decimal(lucro_bruto):.2f}".replace('.', ',') if lucro_bruto is not None else "R$ 0,00"
 
+    context = {
+        'pedidos_pendentes': pedidos_pendentes,
+        'total_pedidos': total_pedidos,
+        'lucro_bruto': lucro_bruto_formatado
+    }
+
+    return render(request, 'confeitaria/menu_usuario.html', context)
+
+
+@login_required
+def redirecionar_menu(request):
+    """
+    Redireciona o usuário para o menu apropriado após o login.
+    """
+    if is_gerente(request.user):
+        return redirect('menu')
+    else:
+        return redirect('menu_usuario')
+
+
+
+def autenticar_login(request):
+    if request.method == "POST":
+        form = UsuarioForm(request.POST)
+        if form.is_valid():
+            user_input = request.POST.get('usuario')
+            pwd_input = request.POST.get('senha')
+
+            with connection.cursor() as cur:
+                cur.execute("SELECT senha FROM confeitaria_usuario WHERE usuario = %s", [user_input])
+                row = cur.fetchone()
+
+            if row and pwd_input == row[0]:
+                User = get_user_model()
+                django_user, _ = User.objects.get_or_create(
+                    username=user_input, defaults={"is_active": True}
+                )
+                django_login(request, django_user)
+                
+                return redirect('redirecionar_menu')
+
+            messages.error(request, "Usuário ou senha incorretos.")
+    else:
+        form = UsuarioForm()
+
+    return render(request, "confeitaria/login.html", {"form": form})
+
+
+@login_required
 def criar_produto(request):
     if request.method == 'POST':
         form = ProdutoForm(request.POST, request.FILES)
@@ -39,6 +97,7 @@ def criar_produto(request):
     return render(request, 'confeitaria/cadastrar_produto.html', {'form': form})
 
 
+@login_required
 def criar_cliente(request):
     if request.method == 'POST':
         form = ClienteForm(request.POST)
@@ -63,17 +122,15 @@ def criar_cliente(request):
 
     return render(request, 'confeitaria/cadastrar_cliente.html', {'form': form})
 
-
+@login_required
 def criar_pedido(request):
     clientes = Cliente.objects.all().order_by('nome')
     produtos = Produto.objects.all().order_by('nome')
 
     if request.method == 'POST':
         try:
-            # Carrega o JSON da requisição
             dados_json = json.loads(request.body)
             
-            # Extrai os dados
             cliente_id = dados_json.get('cliente')
             modalidade = dados_json.get('modalidade')
             data_retirada_str = dados_json.get('data_retirada')
@@ -84,18 +141,15 @@ def criar_pedido(request):
             if not itens_pedido_json:
                 return JsonResponse({'success': False, 'error': 'Pelo menos um item é obrigatório.'}, status=400)
 
-            # Converte a string da data para um objeto date
             data_retirada = None
             if data_retirada_str:
                 data_retirada = datetime.strptime(data_retirada_str, '%Y-%m-%d').date()
 
             with transaction.atomic():
-                # Encontra o cliente se o ID foi fornecido
                 cliente = None
                 if cliente_id:
                     cliente = Cliente.objects.get(pk=cliente_id)
 
-                # Cria o objeto Pedido
                 pedido = Pedido.objects.create(
                     cliente=cliente,
                     modalidade=modalidade,
@@ -103,7 +157,7 @@ def criar_pedido(request):
                     data_pedido=timezone.now(),
                     forma_pagamento=forma_pagamento,
                     observacoes=observacoes,
-                    em_preparo=True # Pedidos novos sempre começam "em preparo"
+                    em_preparo=True
                 )
 
                 total = Decimal('0.00')
@@ -113,20 +167,15 @@ def criar_pedido(request):
                     
                     total += produto.preco * quantidade
                     
-                    # Cria o relacionamento PedidoProduto
                     PedidoProduto.objects.create(
                         id_pedido=pedido,
                         id_produto=produto,
                         quantidade=quantidade
                     )
                     
-                    total += produto.preco * quantidade
-                
-                # Aplica o desconto se for cliente VIP
-                if cliente and cliente.tipo == 'cliente_vip':
+                if cliente and cliente.vip:
                     total *= Decimal('0.90')
-
-                # Atualiza o valor total do pedido
+                    
                 pedido.valor_total = total
                 pedido.save()
 
@@ -139,7 +188,6 @@ def criar_pedido(request):
         except json.JSONDecodeError:
             return JsonResponse({'success': False, 'error': 'Dados JSON inválidos.'}, status=400)
         except Exception as e:
-            # Captura a exceção e retorna a mensagem de erro detalhada
             return JsonResponse({'success': False, 'error': f'Erro interno: {str(e)}'}, status=500)
 
     context = {
@@ -148,6 +196,8 @@ def criar_pedido(request):
     }
     return render(request, 'confeitaria/cadastrar_pedido.html', context)
 
+
+@login_required
 def marcar_pronto(request, pedido_id):
     if request.method == 'POST':
         try:
@@ -162,25 +212,26 @@ def marcar_pronto(request, pedido_id):
     return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
 
 
+@login_required
 def listar_pedidos(request):
-    pedidos = Pedido.objects.all().order_by('data_pedido')
+    pedidos = Pedido.objects.all().order_by('data_pedido'). prefetch_related('itens_do_pedido__id_produto')
     context = {
         'pedidos': pedidos
     }
     return render(request, 'confeitaria/lista_pedidos.html', context)
 
+
+@login_required
 def confirmar_pagamento(request, pedido_id):
     if request.method == 'POST':
         try:
             with transaction.atomic():
                 pedido = get_object_or_404(Pedido, pk=pedido_id)
 
-                # 1. Calcula o valor total uma única vez
                 valor_total_calculado = Decimal('0.00')
                 for item in pedido.itens_do_pedido.all():
                     valor_total_calculado += item.id_produto.preco * item.quantidade
 
-                # 2. Aplica o desconto de 10% se o pedido tiver um cliente associado
                 if pedido.cliente:
                     valor_total_calculado *= Decimal('0.90')
 
@@ -220,32 +271,18 @@ def confirmar_pagamento(request, pedido_id):
     
     return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
 
-def autenticar_login(request):
-    if request.method == "POST":
-        form = UsuarioForm(request.POST)
-        if form.is_valid():
-            user_input = request.POST.get('usuario')
-            pwd_input = request.POST.get('senha')
 
-            with connection.cursor() as cur:
-                cur.execute("SELECT senha FROM confeitaria_usuario WHERE usuario = %s", [user_input])
-                row = cur.fetchone()
-
-            if row and pwd_input == row[0]:
-                User = get_user_model()
-                django_user, _ = User.objects.get_or_create(
-                    username=user_input, defaults={"is_active": True}
-                )
-                django_login(request, django_user)
-                return redirect("menu_usuario")
-
-            messages.error(request, "Usuário ou senha incorretos.")
-    else:
-        form = UsuarioForm()
-
-    return render(request, "confeitaria/login.html", {"form": form})
+@login_required
+def cancelar_pedido(request, pedido_id):
+    try:
+        pedido = get_object_or_404(Pedido, pk=pedido_id)
+        pedido.delete()
+        return JsonResponse({'success': True, 'message': 'Pedido cancelado com sucesso!'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
+@login_required
 def listar_cliente(request):
     termo = request.GET.get('q', '')
     if termo:
@@ -277,6 +314,7 @@ def listar_produto(request):
     return render(request, 'confeitaria/interface_produto.html', context)
 
 
+@login_required
 def editar_produto(request, id):
     produto = get_object_or_404(Produto, id=id)
 
@@ -291,6 +329,7 @@ def editar_produto(request, id):
     return render(request, 'confeitaria/editar_produto.html', {'form': form})
 
 
+@login_required
 def editar_produto_modal(request, id):
     produto = get_object_or_404(Produto, id=id)
 
@@ -308,6 +347,7 @@ def editar_produto_modal(request, id):
     return render(request, 'confeitaria/partials/produto_form_partial.html', {'form': form, 'produto': produto})
 
 
+@login_required
 def deletar_produto(request, id):
     produto = get_object_or_404(Produto, id=id)
 
@@ -318,6 +358,7 @@ def deletar_produto(request, id):
     return render(request, "confeitaria/deletar_produto.html", {"produto": produto})
 
 
+@login_required
 def editar_cliente(request, id):
     cliente = get_object_or_404(Cliente, id=id)
 
@@ -332,6 +373,7 @@ def editar_cliente(request, id):
     return render(request, 'confeitaria/editar_cliente.html', {'form': form, 'cliente': cliente})
 
 
+@login_required
 def deletar_cliente(request, id):
     cliente = get_object_or_404(Cliente, id=id)
 
@@ -341,25 +383,48 @@ def deletar_cliente(request, id):
 
     return render(request, "confeitaria/deletar_cliente.html", {"cliente": cliente})
 
+
+@login_required
 def relatorio_vendas(request):
     data_inicial = request.GET.get('data_inicial')
     data_final = request.GET.get('data_final')
 
-    vendas = PedidoConcluido.objects.all().order_by('-data_pedido')
-
     if data_inicial and data_final:
         data_inicio = parse_date(data_inicial)
         data_fim = parse_date(data_final)
-
+        
+        if data_inicio and data_fim and data_inicio > data_fim:
+            messages.error(request, 'A data inicial não pode ser maior que a data final.')
+            vendas = []
+            total = 0
+            total_pedidos = 0
+            total_itens = 0
+            ticket_medio = 0
+            
+            context = {
+                'vendas': vendas,
+                'total': total,
+                'total_pedidos': total_pedidos,
+                'total_itens': total_itens,
+                'ticket_medio': ticket_medio,
+            }
+            return render(request, 'confeitaria/relatorio_vendas.html', context)
+    
+    vendas = VendaComCliente.objects.all().order_by('-data_pedido')
+    
+    if data_inicial and data_final:
+        data_inicio = parse_date(data_inicial)
+        data_fim = parse_date(data_final)
         if data_inicio and data_fim:
             vendas = vendas.filter(data_pedido__date__range=(data_inicio, data_fim))
 
     total = vendas.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
     total_pedidos = vendas.count()
-
-    total_itens = PedidoConcluidoProduto.objects.filter(id_pedido_concluido__in=vendas).aggregate(
-        total=Sum('quantidade')
-    )['total'] or 0
+    
+    venda_ids = [venda.id for venda in vendas]
+    total_itens = PedidoConcluidoProduto.objects.filter(
+        id_pedido_concluido__in=venda_ids
+    ).aggregate(total=Sum('quantidade'))['total'] or 0
 
     ticket_medio = round(total / total_pedidos, 2) if total_pedidos else 0
 
@@ -385,11 +450,13 @@ def criar_usuario(request):
 
     return render(request, 'confeitaria/cadastrar_usuario.html', {'form': form})
 
+
+@login_required
 def gerar_pdf_relatorio_vendas(request):
     data_inicial = request.GET.get('data_inicial')
     data_final = request.GET.get('data_final')
 
-    vendas = PedidoConcluido.objects.all().order_by('data_pedido')
+    vendas = VendaComCliente.objects.all().order_by('-data_pedido')
 
     if data_inicial and data_final:
         try:
@@ -398,12 +465,13 @@ def gerar_pdf_relatorio_vendas(request):
             if data_inicio and data_fim:
                 vendas = vendas.filter(data_pedido__date__range=[data_inicio, data_fim])
         except:
-            vendas = PedidoConcluido.objects.none()
+            vendas = VendaComCliente.objects.none()
 
     total = vendas.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
     total_pedidos = vendas.count()
 
-    total_itens = PedidoConcluidoProduto.objects.filter(id_pedido_concluido__in=vendas).aggregate(
+    venda_ids = [venda.id for venda in vendas]
+    total_itens = PedidoConcluidoProduto.objects.filter(id_pedido_concluido__in=venda_ids).aggregate(
         total=Sum('quantidade')
     )['total'] or 0
 
@@ -416,7 +484,7 @@ def gerar_pdf_relatorio_vendas(request):
         'total': f"{total:.2f}",
         'total_itens': total_itens,
         'ticket_medio': f"{ticket_medio:.2f}",
-        'agora': now()
+        'data_atual': now()
     }
 
     template = get_template('confeitaria/pdf_relatorio_vendas.html')
@@ -430,20 +498,3 @@ def gerar_pdf_relatorio_vendas(request):
 
     response.seek(0)
     return HttpResponse(response, content_type='application/pdf')
-
-
-def menu_usuario(request):
-    pedidos_pendentes = Pedido.objects.filter(modalidade='retirada').order_by('-data_pedido')
-    
-    total_pedidos = PedidoConcluido.objects.count()
-    lucro_bruto = PedidoConcluido.objects.aggregate(Sum('valor_total'))['valor_total__sum']
-    
-    lucro_bruto_formatado = f"R$ {Decimal(lucro_bruto):.2f}".replace('.', ',') if lucro_bruto is not None else "R$ 0,00"
-
-    context = {
-        'pedidos_pendentes': pedidos_pendentes,
-        'total_pedidos': total_pedidos,
-        'lucro_bruto': lucro_bruto_formatado
-    }
-
-    return render(request, 'confeitaria/menu_usuario.html', context)

@@ -5,6 +5,8 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Pedidos</title>
     {% load static %}
+    <!-- Adicionando SweetAlert2 para confirmações bonitas -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body {
             font-family: 'Georgia', serif;
@@ -146,6 +148,8 @@
             justify-content: flex-end;
             align-items: center;
             margin-top: 15px;
+            gap: 10px;
+            flex-wrap: wrap;
         }
         .status-btn-em-preparo {
             color: #600000;
@@ -180,6 +184,20 @@
             border-radius: 10px;
             font-weight: bold;
         }
+        .status-btn-cancelar {
+            background-color: #842020;
+            color: #ffffe3;
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .status-btn-cancelar:hover {
+            background-color: #ffcdd2;
+            color: #600000;
+        }
         .menu-icon {
             display: none;
             font-size: 24px;
@@ -187,20 +205,38 @@
             color: #710100;
         }
         .modalidade-retirada {
-            background-color: #d0ebff;
-            color: #003366;
+            background-color: #f5d2d6;
+            color: #600000; ;
             padding: 6px 12px;
             border-radius: 8px;
             font-weight: bold;
             margin-top: 10px;
         }
         .modalidade-loja {
-            background-color: #e8d9ff;
-            color: #4b0082;
+            background-color: #f3ebda;
+            color: #600000;
             padding: 6px 12px;
             border-radius: 8px;
             font-weight: bold;
             margin-top: 10px;
+        }
+        .pedido-total {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ffd7c9;
+            font-size: 16px;
+            color: #600000;
+            font-weight: bold;
+        }
+        .observacoes {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: #fff5f5;
+            border-left: 3px solid #fcb1b0;
+            border-radius: 0 8px 8px 0;
+            color: #710100;
+            font-size: 14px;
+            line-height: 1.4;
         }
         @media (max-width: 768px) {
             .navbar-menu {
@@ -230,6 +266,9 @@
             .main-container {
                 padding: 20px;
             }
+            .status-area {
+                justify-content: center;
+            }
         }
         @media (max-width: 550px) {
             .pedidos-grid {
@@ -245,18 +284,46 @@
                 text-align: center;
             }
         }
+
+    /* Personalização do SweetAlert2 */
+.swal2-popup {
+    background-color: #fffaf0 !important;
+    border-radius: 20px !important;
+    border: 2px solid #fbbfc5 !important;
+}
+
+.swal2-title {
+    color: #710100 !important;
+    font-family: 'Georgia', serif !important;
+}
+
+.swal2-content {
+    color: #8b0000 !important;
+    font-family: 'Georgia', serif !important;
+}
+
+.swal2-confirm {
+    background-color: #600000 !important;
+    font-weight: bold !important;
+}
+
+.swal2-cancel {
+    background-color: #fcb1b0 !important;
+    color: #710100 !important;
+    font-weight: bold !important;
+}
     </style>
 </head>
 <body>
     <div class="navbar">
         <img src="{% static 'confeitaria/imagens/LogoBarra.png' %}" alt="Logo Petit Rose" class="navbar-logo">
         <div class="navbar-menu">
-            <a href="{% url 'menu' %}">Início</a>
+            <a href="{% url 'redirecionar_menu' %}">Início</a>
             <a href="{% url 'listar_produto' %}">Produtos</a>
             <a href="{% url 'listar_pedidos' %}" class="ativo">Pedidos</a>
             <a href="{% url 'listar_cliente' %}">Clientes</a>
             <a href="{% url 'relatorio_vendas' %}">Relatórios</a>
-            <a href="{% url 'autenticar_login' %}">Sair</a>
+            <a href="{% url 'autenticar_login' %}" onclick="confirmarSaida(event)">Sair</a>
             <span class="menu-icon" onclick="toggleMenu()">☰</span>
         </div>
     </div>
@@ -270,13 +337,13 @@
         </div>
         <div class="pedidos-grid">
             {% for pedido in pedidos %}
-            <div class="pedido-card">
+            <div class="pedido-card" data-pedido-id="{{ pedido.id }}">
                 <div>
                     <div class="pedido-meta">
                         <p>Pedido #{{ pedido.id }}</p>
                         <p>{{ pedido.data_pedido|date:"d/m/Y H:i" }}</p>
                     </div>
-                    <p><strong>Cliente:</strong> {{ pedido.cliente.nome }}</p>
+                    <p><strong>Cliente:</strong> {{ pedido.cliente.nome|default:"Não informado" }}</p>
                     {% if pedido.modalidade == "retirada" %}
                         <p class="modalidade-retirada">
                             Retirada em: {{ pedido.data_retirada|date:"d/m/Y" }}
@@ -287,15 +354,20 @@
                         </p>
                     {% endif %}
                     <ul>
-                        {% for item in pedido.pedidoproduto_set.all %}
+                        {% for item in pedido.itens_do_pedido.all %}
                             <li>{{ item.quantidade }}x {{ item.id_produto.nome }}</li>
+                        {% empty %}
+                            <li>Nenhum produto neste pedido</li>
                         {% endfor %}
-                        {% if pedido.observacoes %}
-                            <p class="observacoes">
-                                <strong>Obs:</strong> {{ pedido.observacoes }}
-                            </p>
-                        {% endif %}
                     </ul>
+                    <div class="pedido-total">
+                        <strong>Total:</strong> R$ {{ pedido.valor_total|floatformat:2 }}
+                    </div>
+                    {% if pedido.observacoes %}
+                        <p class="observacoes">
+                            <strong>Obs:</strong> {{ pedido.observacoes }}
+                        </p>
+                    {% endif %}
                 </div>
                 <div class="status-area" id="status-area-{{ pedido.id }}">
                     {% if pedido.em_preparo and not pedido.pago %}
@@ -307,6 +379,9 @@
                     {% else %}
                         <span class="status-concluido">Concluído</span>
                     {% endif %}
+                    <button class="status-btn-cancelar" onclick="cancelarPedido('{{ pedido.id }}')">
+                        Cancelar Pedido
+                    </button>
                 </div>
             </div>
             {% empty %}
@@ -319,142 +394,274 @@
             const navbarMenu = document.querySelector('.navbar-menu');
             navbarMenu.classList.toggle('show');
         }
-        // Remove a linha 'const csrftoken = getCookie('csrftoken');' e a função 'getCookie'
-// Elas não serão mais necessárias.
-
-// Função para obter o token CSRF de forma segura
-function getCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-}
-
-function marcarComoPronto(pedidoId) {
-    const confirmacao = confirm("Tem certeza que deseja marcar este pedido como pronto para pagamento?");
-    if (confirmacao) {
-        const statusArea = document.getElementById(`status-area-${pedidoId}`);
-        fetch(`/pedido/${pedidoId}/marcar_pronto/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCsrfToken(), // Pega o token na hora da requisição
-                'Content-Type': 'application/json'
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Atualiza o HTML para mostrar o botão de "Confirmar Pagamento"
-                // PASSANDO O EVENTO CORRETAMENTE
-                statusArea.innerHTML = `<button class="status-btn-pagamento" onclick="confirmarPagamento(event, '${pedidoId}')">Confirmar Pagamento</button>`;
-            } else {
-                alert('Erro ao atualizar o pedido: ' + (data.error || 'Desconhecido'));
-            }
-        })
-        .catch(error => {
-            console.error('Erro na requisição:', error);
-            alert('Erro na requisição. Verifique o console para mais detalhes.');
-        });
-    }
+            return cookieValue;
+        }
+        
+        const csrftoken = getCookie('csrftoken');
+        
+        function marcarComoPronto(pedidoId) {
+    Swal.fire({
+        title: 'Marcar como pronto',
+        text: "Tem certeza que deseja marcar este pedido como pronto para pagamento?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, marcar!',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+            popup: 'swal2-popup',
+            title: 'swal2-title',
+            content: 'swal2-content',
+            confirmButton: 'swal2-confirm',
+            cancelButton: 'swal2-cancel'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const statusArea = document.getElementById(`status-area-${pedidoId}`);
+            fetch(`/pedido/${pedidoId}/marcar_pronto/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    statusArea.innerHTML = `
+                        <button class="status-btn-pagamento" onclick="confirmarPagamento(event, '${pedidoId}')">
+                            Confirmar Pagamento
+                        </button>
+                        <button class="status-btn-cancelar" onclick="cancelarPedido('${pedidoId}')">
+                            Cancelar Pedido
+                        </button>
+                    `;
+                    Swal.fire({
+                        title: 'Sucesso!',
+                        text: 'Pedido marcado como pronto para pagamento.',
+                        icon: 'success',
+                        customClass: {
+                            popup: 'swal2-popup',
+                            title: 'swal2-title',
+                            content: 'swal2-content',
+                            confirmButton: 'swal2-confirm'
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Erro',
+                        text: 'Erro ao atualizar o pedido: ' + (data.error || 'Desconhecido'),
+                        icon: 'error',
+                        customClass: {
+                            popup: 'swal2-popup',
+                            title: 'swal2-title',
+                            content: 'swal2-content',
+                            confirmButton: 'swal2-confirm'
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+                Swal.fire({
+                    title: 'Erro',
+                    text: 'Erro na requisição. Verifique o console para mais detalhes.',
+                    icon: 'error',
+                    customClass: {
+                        popup: 'swal2-popup',
+                        title: 'swal2-title',
+                        content: 'swal2-content',
+                        confirmButton: 'swal2-confirm'
+                    }
+                });
+            });
+        }
+    });
 }
 
 function confirmarPagamento(event, pedidoId) {
-    const confirmacao = confirm("Tem certeza que deseja confirmar o pagamento e concluir o pedido?");
-    if (confirmacao) {
-        fetch(`/pedido/${pedidoId}/concluir/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCsrfToken(), // Pega o token na hora da requisição
-                'Content-Type': 'application/json'
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert("Pagamento confirmado e pedido concluído.");
-                try {
-                    const botao = event.target;
-                    const pedidoCard = botao.closest('.pedido-card');
-                    if (pedidoCard) {
-                        pedidoCard.remove();
-                    } else {
-                        console.error('Elemento .pedido-card não encontrado.');
-                    }
-                } catch (e) {
-                    console.error("Erro ao remover o elemento do pedido:", e);
-                }
-            } else {
-                alert("Erro ao confirmar pagamento: " + (data.error || "Desconhecido"));
-            }
-        })
-        .catch(error => {
-            console.error('Erro na requisição:', error);
-            alert('Erro na requisição. Verifique o console para mais detalhes.');
-        });
-    }
-}
-function marcarComoPronto(pedidoId) {
-    const confirmacao = confirm("Tem certeza que deseja marcar este pedido como pronto para pagamento?");
-    if (confirmacao) {
-        const statusArea = document.getElementById(`status-area-${pedidoId}`);
-        fetch(`/pedido/${pedidoId}/marcar_pronto/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCsrfToken(), // Agora está usando a função correta
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Atualiza o HTML para mostrar o botão de "Confirmar Pagamento"
-                statusArea.innerHTML = `<button class="status-btn-pagamento" onclick="confirmarPagamento(event, '${pedidoId}')">Confirmar Pagamento</button>`;
-            } else {
-                alert('Erro ao atualizar o pedido: ' + (data.error || 'Desconhecido'));
-            }
-        })
-        .catch(error => {
-            console.error('Erro na requisição:', error);
-            alert('Erro na requisição. Verifique o console para mais detalhes.');
-        });
-    }
-}
-        
-        function confirmarPagamento(event, pedidoId) {
-            const confirmacao = confirm("Tem certeza que deseja confirmar o pagamento e concluir o pedido?");
-            if (confirmacao) {
-                // Obtém o token CSRF da meta tag antes de cada requisição
-                const csrftoken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-                fetch(`/pedido/${pedidoId}/concluir/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrftoken,
-                        'Content-Type': 'application/json'
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("Pagamento confirmado e pedido concluído.");
-                        try {
-                            const botao = event.target;
-                            const pedidoCard = botao.closest('.pedido-card');
-                            if (pedidoCard) {
-                                pedidoCard.remove();
-                            } else {
-                                console.error('Elemento .pedido-card não encontrado.');
-                            }
-                        } catch (e) {
-                            console.error("Erro ao remover o elemento do pedido:", e);
-                        }
-                    } else {
-                        alert("Erro ao confirmar pagamento: " + (data.error || "Desconhecido"));
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro na requisição:', error);
-                    alert('Erro na requisição. Verifique o console para mais detalhes.');
-                });
-            }
+    Swal.fire({
+        title: 'Confirmar Pagamento',
+        text: "Tem certeza que deseja confirmar o pagamento e concluir o pedido?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, confirmar!',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+            popup: 'swal2-popup',
+            title: 'swal2-title',
+            content: 'swal2-content',
+            confirmButton: 'swal2-confirm',
+            cancelButton: 'swal2-cancel'
         }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/pedido/${pedidoId}/concluir/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Sucesso!',
+                        text: 'Pagamento confirmado e pedido concluído.',
+                        icon: 'success',
+                        customClass: {
+                            popup: 'swal2-popup',
+                            title: 'swal2-title',
+                            content: 'swal2-content',
+                            confirmButton: 'swal2-confirm'
+                        }
+                    });
+                    document.querySelector(`.pedido-card[data-pedido-id="${pedidoId}"]`).remove();
+                } else {
+                    Swal.fire({
+                        title: 'Erro',
+                        text: 'Erro ao confirmar pagamento: ' + (data.error || "Desconhecido"),
+                        icon: 'error',
+                        customClass: {
+                            popup: 'swal2-popup',
+                            title: 'swal2-title',
+                            content: 'swal2-content',
+                            confirmButton: 'swal2-confirm'
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+                Swal.fire({
+                    title: 'Erro',
+                    text: 'Erro na requisição. Verifique o console para mais detalhes.',
+                    icon: 'error',
+                    customClass: {
+                        popup: 'swal2-popup',
+                        title: 'swal2-title',
+                        content: 'swal2-content',
+                        confirmButton: 'swal2-confirm'
+                    }
+                });
+            });
+        }
+    });
+}
+
+function cancelarPedido(pedidoId) {
+    Swal.fire({
+        title: 'Cancelar Pedido',
+        text: "Tem certeza que deseja cancelar este pedido? Esta ação não pode ser desfeita.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, cancelar!',
+        cancelButtonText: 'Não, manter',
+        customClass: {
+            popup: 'swal2-popup',
+            title: 'swal2-title',
+            content: 'swal2-content',
+            confirmButton: 'swal2-confirm',
+            cancelButton: 'swal2-cancel'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/pedido/${pedidoId}/cancelar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Cancelado!',
+                        text: data.message,
+                        icon: 'success',
+                        customClass: {
+                            popup: 'swal2-popup',
+                            title: 'swal2-title',
+                            content: 'swal2-content',
+                            confirmButton: 'swal2-confirm'
+                        }
+                    });
+                    document.querySelector(`.pedido-card[data-pedido-id="${pedidoId}"]`).remove();
+                } else {
+                    Swal.fire({
+                        title: 'Erro',
+                        text: 'Erro ao cancelar pedido: ' + (data.error || 'Erro desconhecido'),
+                        icon: 'error',
+                        customClass: {
+                            popup: 'swal2-popup',
+                            title: 'swal2-title',
+                            content: 'swal2-content',
+                            confirmButton: 'swal2-confirm'
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                Swal.fire({
+                    title: 'Erro',
+                    text: 'Erro ao processar a requisição',
+                    icon: 'error',
+                    customClass: {
+                        popup: 'swal2-popup',
+                        title: 'swal2-title',
+                        content: 'swal2-content',
+                        confirmButton: 'swal2-confirm'
+                    }
+                });
+            });
+        }
+    });
+}
+
+function confirmarSaida(event) {
+    // Impede a navegação padrão do link
+    event.preventDefault();
+
+    const link = event.currentTarget; // Pega o próprio link clicado
+
+    Swal.fire({
+        title: 'Tem certeza?',
+        text: "Você será desconectado da sua conta.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, sair!',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+            popup: 'swal2-popup',
+            title: 'swal2-title',
+            content: 'swal2-content',
+            confirmButton: 'swal2-confirm',
+            cancelButton: 'swal2-cancel'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Se o usuário confirmar, redireciona para a URL de logout
+            window.location.href = link.href;
+        }
+    });
+}
+
+
     </script>
 </body>
 </html>

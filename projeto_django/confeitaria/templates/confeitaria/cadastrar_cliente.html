@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Novo Cliente - Petit Rose</title>
   {% load static %}
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@500;700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -170,6 +171,33 @@
     .botao-salvar:hover {
       background-color: #9a2a2a;
     }
+
+    .swal2-popup {
+      background-color: #fffaf0 !important;
+      border-radius: 20px !important;
+      border: 2px solid #fbbfc5 !important;
+    }
+
+    .swal2-title {
+      color: #710100 !important;
+      font-family: 'Georgia', serif !important;
+    }
+
+    .swal2-content {
+      color: #8b0000 !important;
+      font-family: 'Georgia', serif !important;
+    }
+
+    .swal2-confirm {
+      background-color: #600000 !important;
+      font-weight: bold !important;
+    }
+
+    .swal2-cancel {
+      background-color: #fcb1b0 !important;
+      color: #710100 !important;
+      font-weight: bold !important;
+    }
   </style>
 </head>
 <body>
@@ -180,12 +208,12 @@
       <img src="{% static 'confeitaria/imagens/LogoBarra.png' %}" alt="Logo Petit Rose" class="navbar-logo">
       <span class="menu-icon" onclick="toggleMenu()">☰</span>
       <div class="navbar-menu">
-        <a href="{% url 'menu' %}">Início</a>
+        <a href="{% url 'redirecionar_menu' %}">Início</a>
         <a href="{% url 'listar_produto' %}">Produtos</a>
-        <a href="#">Pedidos</a>
+        <a href="{% url 'listar_pedidos' %}">Pedidos</a>
         <a href="{% url 'listar_cliente' %}" class="ativo">Clientes</a>
-        <a href="#">Relatórios</a>
-        <a href="{% url 'autenticar_login' %}">Sair</a>
+        <a href="{% url 'relatorio_vendas' %}">Relatórios</a>
+        <a href="{% url 'autenticar_login' %}" onclick="confirmarSaida(event)">Sair</a>
       </div>
     </div>
   </div>
@@ -194,14 +222,24 @@
   <div class="container">
     <h2>Cadastro de Novo Cliente</h2>
     {% if messages %}
-      <ul>
-        {% for message in messages %}
-          <li>{{ message }}</li>
-        {% endfor %}
-      </ul>
+      {% for message in messages %}
+        <script>
+          Swal.fire({
+            title: '{{ message.tags|title }}',
+            text: '{{ message }}',
+            icon: '{{ message.tags }}',
+            customClass: {
+              popup: 'swal2-popup',
+              title: 'swal2-title',
+              content: 'swal2-content',
+              confirmButton: 'swal2-confirm'
+            }
+          });
+        </script>
+      {% endfor %}
     {% endif %}
 
-    <form method="post">
+    <form method="post" id="clienteForm" onsubmit="return validarFormulario(event)">
       {% csrf_token %}
       <div class="linha-dupla">
         <div>
@@ -238,11 +276,151 @@
     </form>
   </div>
 
-  <!-- SCRIPT DO MENU RESPONSIVO -->
+  <!-- SCRIPTS -->
   <script>
     function toggleMenu() {
       const navbarMenu = document.querySelector('.navbar-menu');
       navbarMenu.classList.toggle('show');
+    }
+
+    function validarFormulario(event) {
+      event.preventDefault();
+      
+      const form = document.getElementById('clienteForm');
+      const nome = document.getElementById('nome').value;
+      const telefone = document.getElementById('telefone').value;
+      const rua = document.getElementById('rua').value;
+      const numero = document.getElementById('numero').value;
+      const bairro = document.getElementById('bairro').value;
+      const cep = document.getElementById('cep').value;
+
+      // Validação simples do telefone (apenas verifica se tem pelo menos 10 dígitos)
+      const telefoneNumeros = telefone.replace(/\D/g, '');
+      if (telefoneNumeros.length < 10) {
+        Swal.fire({
+          title: 'Erro',
+          text: 'Por favor, insira um telefone válido com DDD e número',
+          icon: 'error',
+          customClass: {
+            popup: 'swal2-popup',
+            title: 'swal2-title',
+            content: 'swal2-content',
+            confirmButton: 'swal2-confirm'
+          }
+        });
+        return false;
+      }
+
+      // Validação simples do CEP (apenas verifica se tem pelo menos 8 dígitos)
+      const cepNumeros = cep.replace(/\D/g, '');
+      if (cepNumeros.length < 8) {
+        Swal.fire({
+          title: 'Erro',
+          text: 'Por favor, insira um CEP válido com 8 dígitos',
+          icon: 'error',
+          customClass: {
+            popup: 'swal2-popup',
+            title: 'swal2-title',
+            content: 'swal2-content',
+            confirmButton: 'swal2-confirm'
+          }
+        });
+        return false;
+      }
+
+      // Confirmação antes de enviar
+      Swal.fire({
+        title: 'Confirmar Cadastro',
+        text: 'Deseja cadastrar este novo cliente?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, cadastrar!',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+          popup: 'swal2-popup',
+          title: 'swal2-title',
+          content: 'swal2-content',
+          confirmButton: 'swal2-confirm',
+          cancelButton: 'swal2-cancel'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Mostrar mensagem de sucesso simulada (substitua pelo envio real do formulário)
+          form.submit();
+          
+          // Esta parte seria substituída pelo retorno real do servidor
+          Swal.fire({
+            title: 'Sucesso!',
+            text: 'Cliente cadastrado com sucesso!',
+            icon: 'success',
+            customClass: {
+              popup: 'swal2-popup',
+              title: 'swal2-title',
+              content: 'swal2-content',
+              confirmButton: 'swal2-confirm'
+            }
+          });
+        }
+      });
+
+      return false; // Impede o envio padrão do formulário
+    }
+
+    // Máscara para telefone
+    document.getElementById('telefone').addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 2) {
+        value = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+      }
+      if (value.length > 10) {
+        value = `${value.substring(0, 10)}-${value.substring(10, 14)}`;
+      }
+      e.target.value = value;
+    });
+
+    // Máscara para CEP
+    document.getElementById('cep').addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 5) {
+        value = `${value.substring(0, 5)}-${value.substring(5, 8)}`;
+      }
+      e.target.value = value;
+    });
+
+    function confirmarSaida(event) {
+    // Impede a navegação padrão do link
+    event.preventDefault();
+
+    const link = event.currentTarget; // Pega o próprio link clicado
+
+    Swal.fire({
+        title: 'Tem certeza?',
+        text: "Você será desconectado da sua conta.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, sair!',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+            popup: 'swal2-popup',
+            title: 'swal2-title',
+            content: 'swal2-content',
+            confirmButton: 'swal2-confirm',
+            cancelButton: 'swal2-cancel'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Se o usuário confirmar, redireciona para a URL de logout
+            window.location.href = link.href;
+        }
+    });
+}
+
+var is_logged_in = "{{ request.user.is_authenticated|yesno:'true,false' }}";
+    if (is_logged_in === 'false' && window.location.pathname !== '/login/' && window.location.pathname !== '/criar-usuario/') {
+        window.history.pushState(null, "", window.location.href);
+        window.addEventListener('popstate', function() {
+            window.location.href = '/login/';
+        });
     }
   </script>
 

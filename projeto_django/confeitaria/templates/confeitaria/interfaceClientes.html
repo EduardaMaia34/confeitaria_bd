@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>Clientes - Petit Rose</title>
   {% load static %}
+  <!-- Adicionando SweetAlert2 para confirmações bonitas -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body {
       margin: 0;
@@ -285,6 +287,34 @@
         grid-template-columns: 1fr;
       }
     }
+
+    /* Personalização do SweetAlert2 */
+    .swal2-popup {
+      background-color: #fffaf0 !important;
+      border-radius: 20px !important;
+      border: 2px solid #fbbfc5 !important;
+    }
+
+    .swal2-title {
+      color: #710100 !important;
+      font-family: 'Georgia', serif !important;
+    }
+
+    .swal2-content {
+      color: #8b0000 !important;
+      font-family: 'Georgia', serif !important;
+    }
+
+    .swal2-confirm {
+      background-color: #600000 !important;
+      font-weight: bold !important;
+    }
+
+    .swal2-cancel {
+      background-color: #fcb1b0 !important;
+      color: #710100 !important;
+      font-weight: bold !important;
+    }
   </style>
 </head>
 <body>
@@ -295,12 +325,12 @@
       <img src="{% static 'confeitaria/imagens/LogoBarra.png' %}" alt="Logo Petit Rose" class="navbar-logo">
       <span class="menu-icon" onclick="toggleMenu()">☰</span>
       <div class="navbar-menu">
-        <a href="{% url 'menu' %}">Início</a>
+        <a href="{% url 'redirecionar_menu' %}">Início</a>
         <a href="{% url 'listar_produto' %}">Produtos</a>
-        <a href="#">Pedidos</a>
+        <a href="{% url 'listar_pedidos' %}">Pedidos</a>
         <a href="{% url 'listar_cliente' %}" class="ativo">Clientes</a>
         <a href="{% url 'relatorio_vendas' %}">Relatórios</a>
-        <a href="{% url 'autenticar_login' %}">Sair</a>
+        <a href="{% url 'autenticar_login' %}" onclick="confirmarSaida(event)">Sair</a>
       </div>
     </div>
   </div>
@@ -330,10 +360,7 @@
         </div>
         <div class="card-botoes">
           <button class="botao-editar" onclick="abrirModal({{ cliente.id }})">Editar</button>
-          <form action="{% url 'deletar_cliente' cliente.id %}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir este cliente?');">
-            {% csrf_token %}
-            <button type="submit" class="botao-excluir">Excluir</button>
-          </form>
+          <button class="botao-excluir" onclick="confirmarExclusao({{ cliente.id }}, '{{ cliente.nome }}')">Excluir</button>
         </div>
       </div>
 
@@ -388,6 +415,90 @@
           modais[i].style.display = 'none';
         }
       }
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function confirmarExclusao(clienteId, clienteNome) {
+      Swal.fire({
+        title: 'Excluir Cliente',
+        html: `Tem certeza que deseja excluir o cliente <strong>${clienteNome}</strong>? Esta ação não pode ser desfeita.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, excluir!',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+          popup: 'swal2-popup',
+          title: 'swal2-title',
+          content: 'swal2-content',
+          confirmButton: 'swal2-confirm',
+          cancelButton: 'swal2-cancel'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Se confirmado, envia o formulário de exclusão
+          const form = document.createElement('form');
+          form.method = 'post';
+          form.action = `/clientes/deletar/${clienteId}/`;
+          
+          const csrfToken = document.createElement('input');
+          csrfToken.type = 'hidden';
+          csrfToken.name = 'csrfmiddlewaretoken';
+          csrfToken.value = getCookie('csrftoken');
+          
+          form.appendChild(csrfToken);
+          document.body.appendChild(form);
+          form.submit();
+        }
+      });
+    }
+function confirmarSaida(event) {
+    // Impede a navegação padrão do link
+    event.preventDefault();
+
+    const link = event.currentTarget; // Pega o próprio link clicado
+
+    Swal.fire({
+        title: 'Tem certeza?',
+        text: "Você será desconectado da sua conta.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, sair!',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+            popup: 'swal2-popup',
+            title: 'swal2-title',
+            content: 'swal2-content',
+            confirmButton: 'swal2-confirm',
+            cancelButton: 'swal2-cancel'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Se o usuário confirmar, redireciona para a URL de logout
+            window.location.href = link.href;
+        }
+    });
+}
+
+    function confirmarSaida(event) {
+        event.preventDefault(); // Esta linha é CRUCIAL
+        var confirmacao = confirm("Tem certeza de que deseja sair?");
+        if (confirmacao) {
+            document.getElementById('logout-form').submit();
+        }
     }
   </script>
 

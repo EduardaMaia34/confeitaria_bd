@@ -2,12 +2,15 @@ from django.urls import path
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('', views.autenticar_login, name='autenticar_login'),
     path('usuario/cadastrar', views.criar_usuario, name='criar_usuario'),
     path('menu/', views.menu, name='menu'),
     path('menuusuario/', views.menu_usuario, name='menu_usuario'),
+    path('menu_principal/', views.redirecionar_menu, name='redirecionar_menu'),
+    path('sair/', auth_views.LogoutView.as_view(next_page='autenticar_login'), name='logout'),
     
     path('produtos/', views.listar_produto, name='listar_produto'),
     path('produto/cadastro/', views.criar_produto, name='criar_produto'),
@@ -24,6 +27,7 @@ urlpatterns = [
     path('pedidos/', views.listar_pedidos, name='listar_pedidos'),
     path('pedido/<int:pedido_id>/marcar_pronto/', views.marcar_pronto, name='marcar_pronto'),
     path('pedido/<int:pedido_id>/concluir/', views.confirmar_pagamento, name='confirmar_pagamento'),
+    path('pedido/<int:pedido_id>/cancelar/', views.cancelar_pedido, name='cancelar_pedido'),
 
     path('relatorios/vendas/', views.relatorio_vendas, name='relatorio_vendas'),
     path('relatorios/gerar_pdf/', views.gerar_pdf_relatorio_vendas, name='gerar_pdf_relatorio_vendas'),

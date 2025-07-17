@@ -2,8 +2,11 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Lista de Produtos</title>
     {% load static %}
+    <!-- Adicionando SweetAlert2 para confirmações bonitas -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body {
             font-family: 'Georgia', serif;
@@ -542,18 +545,50 @@
             }
         }
 
+        /* Personalização do SweetAlert2 */
+        .swal2-popup {
+            background-color: #fffaf0 !important;
+            border-radius: 20px !important;
+            border: 2px solid #fbbfc5 !important;
+        }
+
+        .swal2-title {
+            color: #710100 !important;
+            font-family: 'Georgia', serif !important;
+        }
+
+        .swal2-content {
+            color: #8b0000 !important;
+            font-family: 'Georgia', serif !important;
+        }
+
+        .swal2-confirm {
+            background-color: #600000 !important;
+            font-weight: bold !important;
+        }
+
+        .swal2-cancel {
+            background-color: #fcb1b0 !important;
+            color: #710100 !important;
+            font-weight: bold !important;
+        }
     </style>
 </head>
 <body>
     <div class="navbar">
         <img src="{% static 'confeitaria/imagens/LogoBarra.png' %}" alt="Logo Petit Rose" class="navbar-logo">
         <div class="navbar-menu">
-            <a href="{% url 'menu' %}">Início</a>
+            <a href="{% url 'redirecionar_menu' %}">Início</a>
             <a href="{% url 'listar_produto' %}" class="ativo">Produtos</a>
-            <a href="#">Pedidos</a>
+            <a href="{% url 'listar_pedidos' %}">Pedidos</a>
             <a href="{% url 'listar_cliente' %}">Clientes</a>
             <a href="{% url 'relatorio_vendas' %}">Relatórios</a>
-            <a href="{% url 'autenticar_login' %}">Sair</a>
+            <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" onclick="confirmarSaida(event)" style="background: none; border: none; padding: 0; cursor: pointer; color: inherit; text-decoration: underline;">
+                    Sair
+                </button>
+            </form>
             <span class="menu-icon" onclick="toggleMenu()">☰</span>
         </div>
     </div>
@@ -590,9 +625,9 @@
                 {% if is_gerente %}
                     <button class="btn-edit open-edit-modal" data-produto-id="{{ produto.id }}">Editar</button>
 
-                    <form action="{% url 'deletar_produto' produto.id %}" method="post" style="display:inline;">
+                    <form action="{% url 'deletar_produto' produto.id %}" method="post" style="display:inline;" class="delete-form">
                         {% csrf_token %}
-                        <button type="submit" class="btn-del" onclick="return confirm('Deseja deletar {{ produto.nome }}?');">Deletar</button>
+                        <button type="button" class="btn-del" onclick="confirmDelete('{{ produto.nome }}', this)">Deletar</button>
                     </form>
                 {% endif %}
 
@@ -613,6 +648,30 @@
     </div>
 
     <script>
+        // Função para confirmar exclusão com SweetAlert2
+        function confirmDelete(productName, button) {
+            Swal.fire({
+                title: 'Confirmar Exclusão',
+                text: `Deseja realmente deletar o produto "${productName}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sim, deletar!',
+                cancelButtonText: 'Cancelar',
+                customClass: {
+                    popup: 'swal2-popup',
+                    title: 'swal2-title',
+                    content: 'swal2-content',
+                    confirmButton: 'swal2-confirm',
+                    cancelButton: 'swal2-cancel'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Encontra o formulário pai e submete
+                    const form = button.closest('form');
+                    form.submit();
+                }
+            });
+        }
 
         // Lógica para abrir e fechar o modal de criação de produto
         const createProductModal = document.getElementById('createProductModal');
@@ -656,8 +715,20 @@
                                 })
                                 .then(data => {
                                     if (data.success) {
-                                        createProductModal.style.display = 'none';
-                                        location.reload(); // Recarrega a página após criação bem-sucedida
+                                        Swal.fire({
+                                            title: 'Sucesso!',
+                                            text: 'Produto criado com sucesso.',
+                                            icon: 'success',
+                                            customClass: {
+                                                popup: 'swal2-popup',
+                                                title: 'swal2-title',
+                                                content: 'swal2-content',
+                                                confirmButton: 'swal2-confirm'
+                                            }
+                                        }).then(() => {
+                                            createProductModal.style.display = 'none';
+                                            location.reload(); // Recarrega a página após criação bem-sucedida
+                                        });
                                     } else {
                                         createModalFormContent.innerHTML = data.form_html;
                                         initializeFileInputScript(createModalFormContent);
@@ -666,7 +737,17 @@
                                 })
                                 .catch(error => {
                                     console.error('Erro ao criar o produto:', error);
-                                    alert('Ocorreu um erro ao criar o produto. Detalhes no console.');
+                                    Swal.fire({
+                                        title: 'Erro',
+                                        text: 'Ocorreu um erro ao criar o produto. Detalhes no console.',
+                                        icon: 'error',
+                                        customClass: {
+                                            popup: 'swal2-popup',
+                                            title: 'swal2-title',
+                                            content: 'swal2-content',
+                                            confirmButton: 'swal2-confirm'
+                                        }
+                                    });
                                     if (error.message.startsWith('<') || error.message.includes('csrfmiddlewaretoken')) {
                                         createModalFormContent.innerHTML = error.message;
                                         initializeFileInputScript(createModalFormContent);
@@ -695,8 +776,6 @@
                 }
             });
         }
-
-
 
         function initializeFileInputScript(contextElement) {
             // Se nenhum contexto for fornecido, usa o documento inteiro como fallback
@@ -803,9 +882,20 @@
                                     })
                                     .then(data => {
                                         if (data.success) {
-                                            modal.style.display = 'none'; // Fecha o modal
-                                            // Recarrega a página para ver as mudanças (mais simples)
-                                            location.reload(); 
+                                            Swal.fire({
+                                                title: 'Sucesso!',
+                                                text: 'Produto atualizado com sucesso.',
+                                                icon: 'success',
+                                                customClass: {
+                                                    popup: 'swal2-popup',
+                                                    title: 'swal2-title',
+                                                    content: 'swal2-content',
+                                                    confirmButton: 'swal2-confirm'
+                                                }
+                                            }).then(() => {
+                                                modal.style.display = 'none'; // Fecha o modal
+                                                location.reload(); // Recarrega a página para ver as mudanças
+                                            });
                                         } else {
                                             // Se o formulário não for válido, exibe os erros no modal
                                             modalFormContent.innerHTML = data.form_html;
@@ -815,7 +905,17 @@
                                     })
                                     .catch(error => {
                                         console.error('Erro ao salvar o produto:', error);
-                                        alert('Ocorreu um erro ao salvar o produto. Detalhes no console.');
+                                        Swal.fire({
+                                            title: 'Erro',
+                                            text: 'Ocorreu um erro ao salvar o produto. Detalhes no console.',
+                                            icon: 'error',
+                                            customClass: {
+                                                popup: 'swal2-popup',
+                                                title: 'swal2-title',
+                                                content: 'swal2-content',
+                                                confirmButton: 'swal2-confirm'
+                                            }
+                                        });
                                         // Se o erro for HTML (erros de formulário), renderiza no modal
                                         if (error.message.startsWith('<') || error.message.includes('csrfmiddlewaretoken')) {
                                             modalFormContent.innerHTML = error.message;
@@ -898,6 +998,42 @@
                 }
             }
         });
+
+function confirmarSaida(event) {
+    // Impede a navegação padrão do link
+    event.preventDefault();
+
+    const link = event.currentTarget; // Pega o próprio link clicado
+
+    Swal.fire({
+        title: 'Tem certeza?',
+        text: "Você será desconectado da sua conta.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, sair!',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+            popup: 'swal2-popup',
+            title: 'swal2-title',
+            content: 'swal2-content',
+            confirmButton: 'swal2-confirm',
+            cancelButton: 'swal2-cancel'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Se o usuário confirmar, redireciona para a URL de logout
+            window.location.href = link.href;
+        }
+    });
+}
+
+    function confirmarSaida(event) {
+        event.preventDefault(); // Esta linha é CRUCIAL
+        var confirmacao = confirm("Tem certeza de que deseja sair?");
+        if (confirmacao) {
+            document.getElementById('logout-form').submit();
+        }
+    }
     </script>
 </body>
 </html>

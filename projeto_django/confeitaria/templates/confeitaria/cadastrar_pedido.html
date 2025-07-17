@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <title>Novo Pedido</title>
     {% load static %}
+    <!-- Adicionando SweetAlert2 para confirmações bonitas -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-
         body {
             font-family: 'Georgia', serif;
             background-color: #fff8e6;
@@ -376,18 +377,46 @@
             background-color: #ffdde6;
             transform: translateY(-2px);
         }
+
+        /* Personalização do SweetAlert2 */
+        .swal2-popup {
+            background-color: #fffaf0 !important;
+            border-radius: 20px !important;
+            border: 2px solid #fbbfc5 !important;
+        }
+
+        .swal2-title {
+            color: #710100 !important;
+            font-family: 'Georgia', serif !important;
+        }
+
+        .swal2-content {
+            color: #8b0000 !important;
+            font-family: 'Georgia', serif !important;
+        }
+
+        .swal2-confirm {
+            background-color: #600000 !important;
+            font-weight: bold !important;
+        }
+
+        .swal2-cancel {
+            background-color: #fcb1b0 !important;
+            color: #710100 !important;
+            font-weight: bold !important;
+        }
     </style>
 </head>
 <body>
     <div class="navbar">
         <img src="{% static 'confeitaria/imagens/LogoBarra.png' %}" alt="Logo Petit Rose" class="navbar-logo">
         <div class="navbar-menu">
-            <a href="{% url 'menu' %}">Início</a>
+            <a href="{% url 'redirecionar_menu' %}">Início</a>
             <a href="{% url 'listar_produto' %}">Produtos</a>
             <a href="{% url 'listar_pedidos' %}" class="ativo">Pedidos</a>
             <a href="{% url 'listar_cliente' %}">Clientes</a>
             <a href="{% url 'relatorio_vendas' %}">Relatórios</a>
-            <a href="{% url 'autenticar_login' %}">Sair</a>
+            <a href="{% url 'autenticar_login' %}" onclick="confirmarSaida(event)">Sair</a>
             <span class="menu-icon" onclick="toggleMenu()">☰</span>
         </div>
     </div>
@@ -592,7 +621,17 @@
                     
                     renderizarItens();
                 } else {
-                    alert('Selecione um produto e uma quantidade válida.');
+                    Swal.fire({
+                        title: 'Atenção!',
+                        text: 'Selecione um produto e uma quantidade válida.',
+                        icon: 'warning',
+                        customClass: {
+                            popup: 'swal2-popup',
+                            title: 'swal2-title',
+                            content: 'swal2-content',
+                            confirmButton: 'swal2-confirm'
+                        }
+                    });
                 }
             });
 
@@ -662,7 +701,17 @@
                 event.preventDefault();
                 
                 if (pedidoItems.length === 0) {
-                    alert('Por favor, adicione pelo menos um item ao pedido.');
+                    Swal.fire({
+                        title: 'Atenção!',
+                        text: 'Por favor, adicione pelo menos um item ao pedido.',
+                        icon: 'warning',
+                        customClass: {
+                            popup: 'swal2-popup',
+                            title: 'swal2-title',
+                            content: 'swal2-content',
+                            confirmButton: 'swal2-confirm'
+                        }
+                    });
                     return;
                 }
 
@@ -741,18 +790,77 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Pedido finalizado com sucesso!');
-                        window.location.href = '{% url "listar_pedidos" %}';
+                        Swal.fire({
+                            title: 'Sucesso!',
+                            text: 'Pedido finalizado com sucesso!',
+                            icon: 'success',
+                            customClass: {
+                                popup: 'swal2-popup',
+                                title: 'swal2-title',
+                                content: 'swal2-content',
+                                confirmButton: 'swal2-confirm'
+                            }
+                        }).then(() => {
+                            window.location.href = '{% url "listar_pedidos" %}';
+                        });
                     } else {
-                        alert('Erro ao finalizar o pedido: ' + data.error);
+                        Swal.fire({
+                            title: 'Erro!',
+                            text: 'Erro ao finalizar o pedido: ' + data.error,
+                            icon: 'error',
+                            customClass: {
+                                popup: 'swal2-popup',
+                                title: 'swal2-title',
+                                content: 'swal2-content',
+                                confirmButton: 'swal2-confirm'
+                            }
+                        });
                     }
                 })
                 .catch(error => {
                     console.error('Erro:', error);
-                    alert('Ocorreu um erro ao enviar o pedido.');
+                    Swal.fire({
+                        title: 'Erro!',
+                        text: 'Ocorreu um erro ao enviar o pedido.',
+                        icon: 'error',
+                        customClass: {
+                            popup: 'swal2-popup',
+                            title: 'swal2-title',
+                            content: 'swal2-content',
+                            confirmButton: 'swal2-confirm'
+                        }
+                    });
                 });
             });
         });
+
+function confirmarSaida(event) {
+    // Impede a navegação padrão do link
+    event.preventDefault();
+
+    const link = event.currentTarget; // Pega o próprio link clicado
+
+    Swal.fire({
+        title: 'Tem certeza?',
+        text: "Você será desconectado da sua conta.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, sair!',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+            popup: 'swal2-popup',
+            title: 'swal2-title',
+            content: 'swal2-content',
+            confirmButton: 'swal2-confirm',
+            cancelButton: 'swal2-cancel'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Se o usuário confirmar, redireciona para a URL de logout
+            window.location.href = link.href;
+        }
+    });
+}
     </script>
 </body>
 </html>
