@@ -7,6 +7,7 @@ urlpatterns = [
     path('', views.autenticar_login, name='autenticar_login'),
     path('usuario/cadastrar', views.criar_usuario, name='criar_usuario'),
     path('menu/', views.menu, name='menu'),
+    path('menuusuario/', views.menu_usuario, name='menu_usuario'),
     
     path('produtos/', views.listar_produto, name='listar_produto'),
     path('produto/cadastro/', views.criar_produto, name='criar_produto'),
@@ -23,5 +24,8 @@ urlpatterns = [
     path('pedidos/', views.listar_pedidos, name='listar_pedidos'),
     path('pedido/<int:pedido_id>/marcar_pronto/', views.marcar_pronto, name='marcar_pronto'),
     path('pedido/<int:pedido_id>/concluir/', views.confirmar_pagamento, name='confirmar_pagamento'),
+
+    path('relatorios/vendas/', views.relatorio_vendas, name='relatorio_vendas'),
+    path('relatorios/gerar_pdf/', views.gerar_pdf_relatorio_vendas, name='gerar_pdf_relatorio_vendas'),
 
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

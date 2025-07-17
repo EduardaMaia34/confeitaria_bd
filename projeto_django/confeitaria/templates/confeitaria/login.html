@@ -111,7 +111,26 @@
       transform: scale(1.02);
     }
 
-    /* Espaço reservado para mensagens de erro */
+    .register-link-wrapper {
+      text-align: left;
+      margin-top: -10px;
+      margin-bottom: 10px;
+      padding-left: 18px
+    }
+
+    .register-link {
+      color: #600000;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    .register-link:hover {
+      text-decoration: underline;
+      color: #f57f89;
+    }
+
     .error-wrapper {
       min-height: 20px;
       margin-bottom: 10px;
@@ -148,7 +167,6 @@
           <img src="{% static 'confeitaria/imagens/Logo.png' %}" class="logo-img" alt="Logo Petit Rose">
         </div>
 
-        <!-- Espaço reservado para mensagens -->
         <div class="error-wrapper">
           {% if messages %}
             <ul class="error-messages">
@@ -159,7 +177,6 @@
           {% endif %}
         </div>
 
-        <!-- Formulário -->
         <form action="{% url 'autenticar_login' %}" class="login-form" method="post">
           {% csrf_token %}
           <div class="input-group">
@@ -168,8 +185,12 @@
           <div class="input-group">
             <input type="password" name="senha" placeholder="Senha" required>
           </div>
+
+          <div class="register-link-wrapper">
+            <a href="{% url 'criar_usuario' %}" class="register-link">CADASTRAR USUÁRIO</a>
+          </div>
+
           <button type="submit" class="login-btn">LOGIN</button>
-          <button type="button" class="register-btn" onclick="window.location.href='{% url 'criar_usuario' %}'">CADASTRAR USUÁRIO</button>
         </form>
       </div>
     </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <title>Pedidos</title>
+    <title>Menu | Petit Rose</title>
     {% load static %}
     <style>
         body {
@@ -66,6 +66,23 @@
             width: calc(100% - 20px);
             max-width: 1200px;
             box-sizing: border-box;
+        }
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 2fr; /* Coluna do relatório (1 parte) e pedidos (2 partes) */
+            gap: 30px;
+        }
+        .report-container {
+            background-color: #fff8e6;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+        }
+        .orders-container {
+            background-color: #fff8e6;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
         }
         .container-header {
             display: flex;
@@ -202,6 +219,37 @@
             font-weight: bold;
             margin-top: 10px;
         }
+        .stats-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            text-align: center;
+            margin-top: 25px; /* Adiciona espaçamento superior para separar do título */
+        }
+        .stat-box {
+            background-color: #fff8e6;
+            border-radius: 10px;
+            padding: 15px 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 150px;
+            margin: 10px 0; /* Espaçamento vertical entre os boxes */
+        }
+        .stat-box h3 {
+            margin: 0 0 5px 0;
+            color: #600000;
+            font-size: 18px;
+        }
+        .stat-box p {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #8b0000;
+        }
+        @media (max-width: 900px) {
+            .content-wrapper {
+                grid-template-columns: 1fr; /* Empilha as colunas em telas menores */
+            }
+        }
         @media (max-width: 768px) {
             .navbar-menu {
                 flex-direction: column;
@@ -244,6 +292,14 @@
                 margin-top: 15px;
                 text-align: center;
             }
+            .stats-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .stat-box {
+                width: 100%;
+                margin: 0;
+            }
         }
     </style>
 </head>
@@ -251,9 +307,9 @@
     <div class="navbar">
         <img src="{% static 'confeitaria/imagens/LogoBarra.png' %}" alt="Logo Petit Rose" class="navbar-logo">
         <div class="navbar-menu">
-            <a href="{% url 'menu' %}">Início</a>
+            <a href="{% url 'menu_usuario' %}" class="ativo">Início</a>
             <a href="{% url 'listar_produto' %}">Produtos</a>
-            <a href="{% url 'listar_pedidos' %}" class="ativo">Pedidos</a>
+            <a href="{% url 'listar_pedidos' %}">Pedidos</a>
             <a href="{% url 'listar_cliente' %}">Clientes</a>
             <a href="{% url 'relatorio_vendas' %}">Relatórios</a>
             <a href="{% url 'autenticar_login' %}">Sair</a>
@@ -261,57 +317,75 @@
         </div>
     </div>
     <div class="main-container">
-        <div class="container-header">
-            <div>
-                <h2>Pedidos</h2>
-                <p>Visualize e atualize o status dos pedidos dos clientes.</p>
-            </div>
-            <a href="{% url 'criar_pedido' %}" class="btn-novo">+ Novo Pedido</a>
-        </div>
-        <div class="pedidos-grid">
-            {% for pedido in pedidos %}
-            <div class="pedido-card">
-                <div>
-                    <div class="pedido-meta">
-                        <p>Pedido #{{ pedido.id }}</p>
-                        <p>{{ pedido.data_pedido|date:"d/m/Y H:i" }}</p>
+        <div class="content-wrapper">
+            <div class="report-container">
+                <div class="container-header">
+                    <h2>Relatório Mensal</h2>
+                </div>
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <h3>Pedidos Concluídos</h3>
+                        <p>{{ total_pedidos }}</p>
                     </div>
-                    <p><strong>Cliente:</strong> {{ pedido.cliente.nome }}</p>
-                    {% if pedido.modalidade == "retirada" %}
-                        <p class="modalidade-retirada">
-                            Retirada em: {{ pedido.data_retirada|date:"d/m/Y" }}
-                        </p>
-                    {% elif pedido.modalidade == "loja" or pedido.modalidade == "Consumo na Loja" or pedido.modalidade == "consumo_loja" %}
-                        <p class="modalidade-loja">
-                            Consumo na loja
-                        </p>
-                    {% endif %}
-                    <ul>
-                        {% for item in pedido.pedidoproduto_set.all %}
-                            <li>{{ item.quantidade }}x {{ item.id_produto.nome }}</li>
-                        {% endfor %}
-                        {% if pedido.observacoes %}
-                            <p class="observacoes">
-                                <strong>Obs:</strong> {{ pedido.observacoes }}
-                            </p>
-                        {% endif %}
-                    </ul>
-                </div>
-                <div class="status-area" id="status-area-{{ pedido.id }}">
-                    {% if pedido.em_preparo and not pedido.pago %}
-                        <button class="status-btn-em-preparo" onclick="marcarComoPronto('{{ pedido.id }}')">Em preparo</button>
-                    {% elif not pedido.em_preparo and not pedido.pago %}
-                        <button class="status-btn-pagamento" onclick="confirmarPagamento(event, '{{ pedido.id }}')">
-                            Confirmar Pagamento
-                        </button>
-                    {% else %}
-                        <span class="status-concluido">Concluído</span>
-                    {% endif %}
+                    <div class="stat-box">
+                        <h3>Lucro Bruto</h3>
+                        <p>{{ lucro_bruto }}</p>
+                    </div>
                 </div>
             </div>
-            {% empty %}
-            <p>Nenhum pedido encontrado.</p>
-            {% endfor %}
+
+            <div class="orders-container">
+                <div class="container-header">
+                    <div>
+                        <h2>Retiradas Pendentes</h2>
+                        <p>Visualize e atualize o status dos pedidos dos clientes.</p>
+                    </div>
+                    <a href="{% url 'criar_pedido' %}" class="btn-novo">+ Novo Pedido</a>
+                </div>
+                <div class="pedidos-grid">
+                    {% for pedido in pedidos_pendentes %}
+                    <div class="pedido-card">
+                        <div>
+                            <div class="pedido-meta">
+                                <p>Pedido #{{ pedido.id }}</p>
+                                <p>{{ pedido.data_pedido|date:"d/m/Y H:i" }}</p>
+                            </div>
+                            <p><strong>Cliente:</strong> {{ pedido.cliente.nome }}</p>
+                            {% if pedido.modalidade == "retirada" %}
+                                <p class="modalidade-retirada">
+                                    Retirada em: {{ pedido.data_retirada|date:"d/m/Y" }}
+                                </p>
+                            {% elif pedido.modalidade == "loja" or pedido.modalidade == "Consumo na Loja" or pedido.modalidade == "consumo_loja" %}
+                                <p class="modalidade-loja">
+                                    Consumo na loja
+                                </p>
+                            {% endif %}
+                            <ul>
+                                {% for item in pedido.pedidoproduto_set.all %}
+                                    <li>{{ item.quantidade }}x {{ item.id_produto.nome }}</li>
+                                {% endfor %}
+                                {% if pedido.observacoes %}
+                                    <p class="observacoes">
+                                        <strong>Obs:</strong> {{ pedido.observacoes }}
+                                    </p>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        <div class="status-area" id="status-area-{{ pedido.id }}">
+                            {% if pedido.em_preparo %}
+                                <button class="status-btn-em-preparo" onclick="marcarComoPronto('{{ pedido.id }}')">Em preparo</button>
+                            {% else %}
+                                <button class="status-btn-pagamento" onclick="confirmarPagamento(event, '{{ pedido.id }}')">
+                                    Confirmar Pagamento
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>Nenhuma retirada pendente.</p>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
     <script>
@@ -319,114 +393,44 @@
             const navbarMenu = document.querySelector('.navbar-menu');
             navbarMenu.classList.toggle('show');
         }
-        // Remove a linha 'const csrftoken = getCookie('csrftoken');' e a função 'getCookie'
-// Elas não serão mais necessárias.
 
-// Função para obter o token CSRF de forma segura
-function getCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-}
-
-function marcarComoPronto(pedidoId) {
-    const confirmacao = confirm("Tem certeza que deseja marcar este pedido como pronto para pagamento?");
-    if (confirmacao) {
-        const statusArea = document.getElementById(`status-area-${pedidoId}`);
-        fetch(`/pedido/${pedidoId}/marcar_pronto/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCsrfToken(), // Pega o token na hora da requisição
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Atualiza o HTML para mostrar o botão de "Confirmar Pagamento"
-                // PASSANDO O EVENTO CORRETAMENTE
-                statusArea.innerHTML = `<button class="status-btn-pagamento" onclick="confirmarPagamento(event, '${pedidoId}')">Confirmar Pagamento</button>`;
-            } else {
-                alert('Erro ao atualizar o pedido: ' + (data.error || 'Desconhecido'));
-            }
-        })
-        .catch(error => {
-            console.error('Erro na requisição:', error);
-            alert('Erro na requisição. Verifique o console para mais detalhes.');
-        });
-    }
-}
-
-function confirmarPagamento(event, pedidoId) {
-    const confirmacao = confirm("Tem certeza que deseja confirmar o pagamento e concluir o pedido?");
-    if (confirmacao) {
-        fetch(`/pedido/${pedidoId}/concluir/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCsrfToken(), // Pega o token na hora da requisição
-                'Content-Type': 'application/json'
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert("Pagamento confirmado e pedido concluído.");
-                try {
-                    const botao = event.target;
-                    const pedidoCard = botao.closest('.pedido-card');
-                    if (pedidoCard) {
-                        pedidoCard.remove();
-                    } else {
-                        console.error('Elemento .pedido-card não encontrado.');
+        function getCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        }
+        
+        function marcarComoPronto(pedidoId) {
+            const confirmacao = confirm("Tem certeza que deseja marcar este pedido como pronto para pagamento?");
+            if (confirmacao) {
+                const statusArea = document.getElementById(`status-area-${pedidoId}`);
+                fetch(`/pedido/${pedidoId}/marcar_pronto/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken(),
+                        'Content-Type': 'application/json'
                     }
-                } catch (e) {
-                    console.error("Erro ao remover o elemento do pedido:", e);
-                }
-            } else {
-                alert("Erro ao confirmar pagamento: " + (data.error || "Desconhecido"));
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        statusArea.innerHTML = `<button class="status-btn-pagamento" onclick="confirmarPagamento(event, '${pedidoId}')">Confirmar Pagamento</button>`;
+                    } else {
+                        alert('Erro ao atualizar o pedido: ' + (data.error || 'Desconhecido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro na requisição:', error);
+                    alert('Erro na requisição. Verifique o console para mais detalhes.');
+                });
             }
-        })
-        .catch(error => {
-            console.error('Erro na requisição:', error);
-            alert('Erro na requisição. Verifique o console para mais detalhes.');
-        });
-    }
-}
-function marcarComoPronto(pedidoId) {
-    const confirmacao = confirm("Tem certeza que deseja marcar este pedido como pronto para pagamento?");
-    if (confirmacao) {
-        const statusArea = document.getElementById(`status-area-${pedidoId}`);
-        fetch(`/pedido/${pedidoId}/marcar_pronto/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCsrfToken(), // Agora está usando a função correta
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Atualiza o HTML para mostrar o botão de "Confirmar Pagamento"
-                statusArea.innerHTML = `<button class="status-btn-pagamento" onclick="confirmarPagamento(event, '${pedidoId}')">Confirmar Pagamento</button>`;
-            } else {
-                alert('Erro ao atualizar o pedido: ' + (data.error || 'Desconhecido'));
-            }
-        })
-        .catch(error => {
-            console.error('Erro na requisição:', error);
-            alert('Erro na requisição. Verifique o console para mais detalhes.');
-        });
-    }
-}
+        }
         
         function confirmarPagamento(event, pedidoId) {
             const confirmacao = confirm("Tem certeza que deseja confirmar o pagamento e concluir o pedido?");
             if (confirmacao) {
-                // Obtém o token CSRF da meta tag antes de cada requisição
-                const csrftoken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
                 fetch(`/pedido/${pedidoId}/concluir/`, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': csrftoken,
+                        'X-CSRFToken': getCsrfToken(),
                         'Content-Type': 'application/json'
                     },
                 })

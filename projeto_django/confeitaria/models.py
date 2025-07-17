@@ -33,6 +33,7 @@ class Pedido(models.Model):
     id = models.AutoField(primary_key=True)
     cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True)
     data_pedido = models.DateTimeField(auto_now_add=True)
+    valor_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     MODALIDADE_CHOICES = [
         ('loja', 'Consumo na Loja'),
         ('retirada', 'Retirada'),
@@ -49,6 +50,7 @@ class Pedido(models.Model):
     em_preparo = models.BooleanField(default=True)
     observacoes = models.TextField(blank=True, null=True)
 
+   
     def __str__(self):
         return f"Pedido #{self.id} - {self.cliente.nome}"
 
@@ -60,18 +62,20 @@ class PedidoProduto(models.Model):
 
 
 class PedidoConcluido(models.Model):
-    id_original = models.IntegerField(unique=True) 
+    id = models.AutoField(primary_key=True)
+    id_original = models.IntegerField(null=True, blank=True)
     cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True)
     data_pedido = models.DateTimeField()
-    modalidade = models.CharField(max_length=20, choices=Pedido.MODALIDADE_CHOICES)
+    valor_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00) # Adicione esta linha
+    modalidade = models.CharField(max_length=20, default='loja')
     data_retirada = models.DateTimeField(null=True, blank=True)
-    forma_pagamento = models.CharField(max_length=20, choices=Pedido.FORMA_PAGAMENTO_CHOICES)
+    forma_pagamento = models.CharField(max_length=20, default='dinheiro')
     observacoes = models.TextField(blank=True, null=True)
-    data_confirmacao = models.DateTimeField(auto_now_add=True)
+    data_confirmacao = models.DateTimeField(auto_now_add=True) # Data em que o pedido foi concluído
 
     def __str__(self):
-        return f"Pedido Concluído #{self.id_original}"
-
+        return f"Pedido Concluido #{self.id}"
+    
 class PedidoConcluidoProduto(models.Model):
     id_pedido_concluido = models.ForeignKey(PedidoConcluido, on_delete=models.CASCADE)
     id_produto = models.ForeignKey('Produto', on_delete=models.SET_NULL, null=True)
@@ -80,26 +84,6 @@ class PedidoConcluidoProduto(models.Model):
     def __str__(self):
         return f"{self.quantidade}x {self.id_produto.nome}"
 
-class PedidoConcluido(models.Model):
-    id_original = models.IntegerField(unique=True) 
-    cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True)
-    data_pedido = models.DateTimeField()
-    modalidade = models.CharField(max_length=20, choices=Pedido.MODALIDADE_CHOICES)
-    data_retirada = models.DateTimeField(null=True, blank=True)
-    forma_pagamento = models.CharField(max_length=20, choices=Pedido.FORMA_PAGAMENTO_CHOICES)
-    observacoes = models.TextField(blank=True, null=True)
-    data_confirmacao = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Pedido Concluído #{self.id_original}"
-
-class PedidoConcluidoProduto(models.Model):
-    id_pedido_concluido = models.ForeignKey(PedidoConcluido, on_delete=models.CASCADE)
-    id_produto = models.ForeignKey('Produto', on_delete=models.SET_NULL, null=True)
-    quantidade = models.IntegerField()
-    
-    def __str__(self):
-        return f"{self.quantidade}x {self.id_produto.nome}"
 
 class Usuario(models.Model):
     id = models.AutoField(primary_key=True)
