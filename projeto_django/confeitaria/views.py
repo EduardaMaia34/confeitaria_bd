@@ -17,8 +17,8 @@ from django.utils import timezone
 
 
 # Importa os modelos que estão faltando e o novo modelo da visão
-from .models import Pedido, Produto, Cliente, PedidoConcluido, PedidoConcluidoProduto, VendaComCliente
-from .forms import ProdutoForm, ClienteForm, UsuarioForm
+from .models import Pedido, Produto, Cliente, PedidoConcluido, PedidoConcluidoProduto, VendaComCliente, PedidoProduto
+from .forms import ProdutoForm, ClienteForm, UsuarioForm, PedidoProdutoForm, PedidoProdutoFormSet , PedidoForm
 
 
 def is_gerente(user):
@@ -173,7 +173,7 @@ def criar_pedido(request):
                         quantidade=quantidade
                     )
                     
-                if cliente and cliente.vip:
+                if cliente:
                     total *= Decimal('0.90')
                     
                 pedido.valor_total = total
@@ -196,6 +196,65 @@ def criar_pedido(request):
     }
     return render(request, 'confeitaria/cadastrar_pedido.html', context)
 
+@login_required
+def editar_pedido(request, pedido_id):
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+
+    # Passo 1: Buscamos todos os produtos e preparamos os dados para o JavaScript
+    # Passamos os dados como um objeto Python, sem json.dumps()
+    produtos_data = list(Produto.objects.all().order_by('nome').values('id', 'nome'))
+
+    if request.method == 'POST':
+        form = PedidoForm(request.POST, instance=pedido)
+        formset = PedidoProdutoFormSet(request.POST, request.FILES, instance=pedido)
+        
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            
+            for item in formset.save(commit=False):
+                if item.id:
+                    item.save()
+                else:
+                    item.id_pedido = pedido
+                    item.save()
+            
+            for item in formset.deleted_objects:
+                item.delete()
+
+            novo_valor_total = Decimal('0.00')
+            for item in pedido.itens_do_pedido.all():
+                novo_valor_total += item.id_produto.preco * item.quantidade
+
+            if pedido.cliente:
+                novo_valor_total *= Decimal('0.90')
+            
+            pedido.valor_total = novo_valor_total
+            pedido.save()
+
+            return JsonResponse({'success': True, 'redirect_url': '/listar_pedidos/'})
+        else:
+            contexto = {
+                'pedido': pedido,
+                'form': form,
+                'formset': formset,
+                'produtos_data': produtos_data, # Passa o objeto Python
+            }
+            html = render_to_string('confeitaria/partials/modal_editar_pedido.html', contexto, request=request)
+            return JsonResponse({'success': False, 'form_html': html})
+
+    else:
+        form = PedidoForm(instance=pedido)
+        formset = PedidoProdutoFormSet(instance=pedido)
+
+    contexto = {
+        'pedido': pedido,
+        'form': form,
+        'formset': formset,
+        # Passo 2: Passamos o objeto Python
+        'produtos_data': produtos_data,
+    }
+
+    return render(request, 'confeitaria/partials/modal_editar_pedido.html', contexto)
 
 @login_required
 def marcar_pronto(request, pedido_id):
@@ -215,9 +274,13 @@ def marcar_pronto(request, pedido_id):
 @login_required
 def listar_pedidos(request):
     pedidos = Pedido.objects.all().order_by('data_pedido'). prefetch_related('itens_do_pedido__id_produto')
+    produtos = list(Produto.objects.values('id', 'nome'))
+    
     context = {
-        'pedidos': pedidos
+        'pedidos': pedidos,
+        'produtos': produtos  # Isso resolve o problema de dados ausentes
     }
+    
     return render(request, 'confeitaria/lista_pedidos.html', context)
 
 
@@ -388,39 +451,37 @@ def deletar_cliente(request, id):
 def relatorio_vendas(request):
     data_inicial = request.GET.get('data_inicial')
     data_final = request.GET.get('data_final')
-
+    
+    sql_query = """
+    SELECT
+        T1.*,
+        T2.nome AS cliente__nome, 
+        T2.telefone AS cliente__telefone
+    FROM
+        confeitaria_pedidoconcluido AS T1
+    LEFT JOIN
+        confeitaria_cliente AS T2
+    ON
+        T1.cliente_id = T2.id
+    """
+    
+    params = []
+    
     if data_inicial and data_final:
         data_inicio = parse_date(data_inicial)
         data_fim = parse_date(data_final)
         
-        if data_inicio and data_fim and data_inicio > data_fim:
-            messages.error(request, 'A data inicial não pode ser maior que a data final.')
-            vendas = []
-            total = 0
-            total_pedidos = 0
-            total_itens = 0
-            ticket_medio = 0
-            
-            context = {
-                'vendas': vendas,
-                'total': total,
-                'total_pedidos': total_pedidos,
-                'total_itens': total_itens,
-                'ticket_medio': ticket_medio,
-            }
-            return render(request, 'confeitaria/relatorio_vendas.html', context)
-    
-    vendas = VendaComCliente.objects.all().order_by('-data_pedido')
-    
-    if data_inicial and data_final:
-        data_inicio = parse_date(data_inicial)
-        data_fim = parse_date(data_final)
         if data_inicio and data_fim:
-            vendas = vendas.filter(data_pedido__date__range=(data_inicio, data_fim))
+            sql_query += " WHERE T1.data_pedido::date BETWEEN %s AND %s"
+            params.extend([data_inicio, data_fim])
 
-    total = vendas.aggregate(Sum('valor_total'))['valor_total__sum'] or 0
-    total_pedidos = vendas.count()
-    
+    sql_query += " ORDER BY T1.data_pedido DESC"
+
+    vendas = PedidoConcluido.objects.raw(sql_query, params)
+
+    total = sum(venda.valor_total for venda in vendas) if vendas else 0
+    total_pedidos = len(list(vendas))
+
     venda_ids = [venda.id for venda in vendas]
     total_itens = PedidoConcluidoProduto.objects.filter(
         id_pedido_concluido__in=venda_ids
@@ -453,6 +514,7 @@ def criar_usuario(request):
 
 @login_required
 def gerar_pdf_relatorio_vendas(request):
+    
     data_inicial = request.GET.get('data_inicial')
     data_final = request.GET.get('data_final')
 
@@ -498,3 +560,196 @@ def gerar_pdf_relatorio_vendas(request):
 
     response.seek(0)
     return HttpResponse(response, content_type='application/pdf')
+
+
+
+def render_formulario_edicao(request, pedido):
+    """Renderiza o formulário HTML para edição do pedido"""
+    try:
+        itens_pedido = PedidoProduto.objects.filter(
+            id_pedido=pedido
+        ).select_related('id_produto')
+        
+        produtos = Produto.objects.filter(ativo=True).order_by('nome')
+        clientes = Cliente.objects.filter(ativo=True).order_by('nome')
+
+        context = {
+            'pedido': pedido,
+            'itens_pedido': itens_pedido,
+            'produtos': produtos,
+            'clientes': clientes,
+            'modalidades': dict(Pedido.MODALIDADE_CHOICES),
+            'formas_pagamento': dict(Pedido.FORMA_PAGAMENTO_CHOICES),
+            'STATUS_PEDIDO': dict(Pedido.STATUS_CHOICES),
+        }
+        
+        return render(
+            request,
+            'confeitaria/partials/modal_editar_pedido.html',
+            context
+        )
+        
+    except Exception as e:
+        print(f"Erro ao renderizar formulário: {str(e)}")
+        return render(
+            request,
+            'confeitaria/partials/modal_erro.html',
+            {'mensagem': 'Erro ao carregar formulário de edição'},
+            status=500
+        )
+
+def processar_edicao_pedido(request, pedido):
+    """Processa as alterações do pedido via AJAX"""
+    try:
+        dados = json.loads(request.body)
+        
+        # Validação básica dos dados
+        if not validar_dados_pedido(dados):
+            return JsonResponse({
+                'success': False,
+                'error': 'Dados do pedido inválidos'
+            }, status=400)
+
+        with transaction.atomic():
+            # Atualiza os dados principais do pedido
+            atualizar_dados_principais(pedido, dados)
+            
+            # Processa os itens do pedido
+            valor_total = processar_itens_pedido(pedido, dados.get('itens', []))
+            
+            # Atualiza valor total e salva
+            pedido.valor_total = valor_total
+            pedido.save()
+
+        return JsonResponse({
+            'success': True,
+            'pedido_id': pedido.id,
+            'valor_total': f"R$ {pedido.valor_total:.2f}",
+            'status': pedido.get_status_display(),
+            'status_class': pedido.status
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Dados JSON inválidos'
+        }, status=400)
+        
+    except Cliente.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Cliente não encontrado'
+        }, status=404)
+        
+    except Produto.DoesNotExist as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Produto não encontrado: {str(e)}'
+        }, status=404)
+        
+    except Exception as e:
+        print(f"Erro ao editar pedido: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Erro interno: {str(e)}'
+        }, status=500)
+
+def validar_dados_pedido(dados):
+    """Valida os dados recebidos do pedido"""
+    if not dados.get('itens'):
+        return False
+        
+    if dados.get('modalidade') not in dict(Pedido.MODALIDADE_CHOICES):
+        return False
+        
+    if dados.get('forma_pagamento') not in dict(Pedido.FORMA_PAGAMENTO_CHOICES):
+        return False
+        
+    return True
+
+def atualizar_dados_principais(pedido, dados):
+    """Atualiza os dados principais do pedido"""
+    pedido.cliente_id = dados.get('cliente_id')
+    pedido.modalidade = dados.get('modalidade')
+    pedido.forma_pagamento = dados.get('forma_pagamento')
+    pedido.observacoes = dados.get('observacoes', '')[:500]  # Limita a 500 caracteres
+    
+    # Converte a data de retirada se existir
+    if dados.get('data_retirada'):
+        try:
+            pedido.data_retirada = datetime.strptime(
+                dados['data_retirada'],
+                '%Y-%m-%d'
+            ).date()
+        except (ValueError, TypeError):
+            pedido.data_retirada = None
+
+def processar_itens_pedido(pedido, itens):
+    """Processa e atualiza os itens do pedido, retorna o valor total"""
+    # Remove itens antigos
+    PedidoProduto.objects.filter(id_pedido=pedido).delete()
+    
+    total = Decimal('0.00')
+    
+    for item in itens:
+        produto = Produto.objects.get(
+            pk=item['produto_id'],
+            ativo=True
+        )
+        
+        quantidade = int(item['quantidade'])
+        if quantidade <= 0:
+            continue  # Ignora quantidades inválidas
+            
+        PedidoProduto.objects.create(
+            id_pedido=pedido,
+            id_produto=produto,
+            quantidade=quantidade,
+            preco_unitario=produto.preco
+        )
+        
+        total += produto.preco * quantidade
+    
+    # Aplica desconto para clientes cadastrados
+    if pedido.cliente_id:
+        total *= Decimal('0.90')  # 10% de desconto
+        
+    return total
+
+def api_pedido_detalhe(request, pedido_id):
+    try:
+        pedido = Pedido.objects.get(id=pedido_id)
+        
+        # Use select_related para buscar o produto em uma única consulta, melhorando a performance
+        itens = PedidoProduto.objects.filter(id_pedido=pedido).select_related('id_produto')
+
+        itens_list = []
+        for item in itens:
+            # Calcule o subtotal aqui na view
+            subtotal_item = item.quantidade * item.id_produto.preco
+            
+            itens_list.append({
+                'id': item.id,
+                'produto_id': item.id_produto.id,
+                'nome_produto': item.id_produto.nome,
+                'quantidade': item.quantidade,
+                'preco_unitario': float(item.id_produto.preco),
+                'subtotal': float(subtotal_item), # Use a variável calculada
+            })
+
+        pedido_data = {
+            'id': pedido.id,
+            'cliente': pedido.cliente.nome if pedido.cliente else 'N/A',
+            'data_pedido': pedido.data_pedido.isoformat(),
+            'valor_total': float(pedido.valor_total),
+            'modalidade': pedido.get_modalidade_display(),
+            'forma_pagamento': pedido.get_forma_pagamento_display(),
+            'em_preparo': pedido.em_preparo,
+            'observacoes': pedido.observacoes,
+            'data_retirada': pedido.data_retirada.isoformat() if pedido.data_retirada else None,
+        }
+
+        return JsonResponse({'pedido': pedido_data, 'itens': itens_list})
+
+    except Pedido.DoesNotExist:
+        return JsonResponse({'error': 'Pedido não encontrado.'}, status=404)

@@ -494,11 +494,31 @@ function confirmarSaida(event) {
 }
 
     function confirmarSaida(event) {
-        event.preventDefault(); // Esta linha é CRUCIAL
-        var confirmacao = confirm("Tem certeza de que deseja sair?");
-        if (confirmacao) {
-            document.getElementById('logout-form').submit();
-        }
+        // Impede a navegação padrão do link
+        event.preventDefault();
+
+        const link = event.currentTarget; // Pega o próprio link clicado
+
+        Swal.fire({
+            title: 'Sair do Sistema',
+            html: 'Tem certeza que deseja sair do sistema? Você será desconectado da sua conta.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, sair!',
+            cancelButtonText: 'Cancelar',
+            customClass: {
+                popup: 'swal2-popup',
+                title: 'swal2-title',
+                content: 'swal2-content',
+                confirmButton: 'swal2-confirm',
+                cancelButton: 'swal2-cancel'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Se o usuário confirmar, redireciona para a URL de logout
+                window.location.href = link.href;
+            }
+        });
     }
   </script>
 

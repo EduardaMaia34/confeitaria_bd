@@ -1,0 +1,61 @@
+<form id="form-editar-pedido" method="post">
+    {% csrf_token %}
+    <h2>Editar Pedido #{{ form.instance.id }}</h2>
+    <div class="linha-dupla">
+        <div>
+            <label for="id_cliente">Cliente</label>
+            {{ form.cliente }}
+        </div>
+        <div>
+            <label for="id_modalidade">Modalidade</label>
+            {{ form.modalidade }}
+        </div>
+    </div>
+    
+    <div class="linha-dupla">
+        <div>
+            <label for="id_data_retirada">Data de Retirada</label>
+            {{ form.data_retirada }}
+        </div>
+        <div>
+            <label for="id_hora_retirada">Hora de Retirada</label>
+            {{ form.hora_retirada }}
+        </div>
+    </div>
+
+    <div class="linha-simples">
+        <label for="id_observacoes">Observações</label>
+        {{ form.observacoes }}
+    </div>
+
+    <div class="itens-pedido">
+        <hr>
+        <h4>Itens do Pedido</h4>
+        <div id="itens-container">
+            {{ item_formset.management_form }}
+            {% for item_form in item_formset %}
+            <div class="item-row existing-item-row">
+                {{ item_form.id_produto }}
+                {{ item_form.quantidade }}
+                {{ item_form.id }}
+                {{ item_form.DELETE }}
+                <button type="button" class="btn-remover">Remover</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="new-item-row hidden">
+        <select name="{{ item_formset.prefix }}-__prefix__-id_produto" class="form-input produto-select" required>
+            </select>
+        <input type="number" name="{{ item_formset.prefix }}-__prefix__-quantidade" min="1" value="1" class="form-input quantidade-input" required>
+        <button type="button" class="btn-remover">Remover</button>
+    </div>
+
+    <button type="button" id="btn-adicionar-item" class="btn-adicionar-item">Adicionar Item</button>
+
+    <div class="botoes-form">
+        <button type="submit" class="botao-salvar">Salvar Pedido</button>
+        <button type="button" class="botao-cancelar" onclick="fecharModal()">Cancelar</button>
+    </div>
+</form>

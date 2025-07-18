@@ -1,11 +1,11 @@
 # confeitaria/forms.py
 from django import forms
-from django.forms.widgets import ClearableFileInput
-from .models import Produto, Cliente, Pedido, PedidoProduto, Usuario
+from django.forms.widgets import ClearableFileInput, DateInput
 from django.forms import inlineformset_factory
+from .models import Produto, Cliente, Pedido, PedidoProduto, Usuario
 
+# Custom Widget
 class CustomClearableFileInput(ClearableFileInput):
-    # Definindo template_name como um atributo da classe
     template_name = 'widgets/custom_clearable_file_input.html'
 
 # Form do Produto
@@ -14,54 +14,50 @@ class ProdutoForm(forms.ModelForm):
         model = Produto
         fields = ['nome', 'descricao', 'preco', 'imagem']
         widgets = {
-            # Agora, instancie o seu widget personalizado sem passar template_name aqui
-            'imagem': CustomClearableFileInput(attrs={'class': 'meu-input-imagem'}),
+            'nome': forms.TextInput(attrs={'class': 'form-input'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-textarea'}),
+            'preco': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01'}),
         }
-    def __str__(self):
-        return self.nome  # importante!
-        
+
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
         fields = ['nome', 'telefone', 'rua', 'numero', 'bairro', 'cep']
-    
-    def __str__(self):
-        return self.nome
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-input'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-input'}),
+            'rua': forms.TextInput(attrs={'class': 'form-input'}),
+            'numero': forms.TextInput(attrs={'class': 'form-input'}),
+            'bairro': forms.TextInput(attrs={'class': 'form-input'}),
+            'cep': forms.TextInput(attrs={'class': 'form-input'}),
+        }
 
 class PedidoForm(forms.ModelForm):
-    data_retirada = forms.DateTimeField(
-        input_formats=['%d/%m/%Y'],
-        widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'})
-    )
     class Meta:
         model = Pedido
         fields = '__all__'
-    def __str__(self):
-        return f"Pedido #{self.id} - {self.cliente.nome} - {self.data_pedido.strftime('%d/%m/%Y %H:%M')}"
 
 class PedidoProdutoForm(forms.ModelForm):
+    id_produto = forms.ModelChoiceField(
+        queryset=Produto.objects.all().order_by('nome'),
+        label="Produto",
+        empty_label="Selecione um produto"
+    )
+    
     class Meta:
         model = PedidoProduto
         fields = ['id_produto', 'quantidade']
-        widgets = {
-            'quantidade': forms.NumberInput(attrs={'min': '1'})
-        }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['id_produto'].queryset = Produto.objects.all()
-        self.fields['id_produto'].empty_label = "--- Selecione um produto ---"
-        self.fields['id_produto'].label = "Produto:"
 
+# Esta é a definição mais importante. Garanta que ela esteja exatamente assim.
 PedidoProdutoFormSet = inlineformset_factory(
     Pedido,
     PedidoProduto,
-    form=PedidoProdutoForm,
-    extra=0,
-    can_delete=True,
-    fields=('id_produto', 'quantidade',)
+    form=PedidoProdutoForm, # <--- ADICIONE ESTA LINHA
+    extra=1,
+    can_delete=True
 )
-    
+
+
 class UsuarioForm(forms.ModelForm):
     class Meta:
         model = Usuario

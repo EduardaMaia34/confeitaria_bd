@@ -25,7 +25,7 @@ class Cliente(models.Model):
 
     def __str__(self):
         return self.nome
-    
+
 
 from django.db import models
 
@@ -52,7 +52,9 @@ class Pedido(models.Model):
 
    
     def __str__(self):
-        return f"Pedido #{self.id} - {self.cliente.nome}"
+        if self.cliente:
+            return f"Pedido #{self.id} - {self.cliente.nome}"
+        return f"Pedido #{self.id} - Sem cliente"
 
 
 class PedidoProduto(models.Model):

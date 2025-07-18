@@ -28,6 +28,8 @@ urlpatterns = [
     path('pedido/<int:pedido_id>/marcar_pronto/', views.marcar_pronto, name='marcar_pronto'),
     path('pedido/<int:pedido_id>/concluir/', views.confirmar_pagamento, name='confirmar_pagamento'),
     path('pedido/<int:pedido_id>/cancelar/', views.cancelar_pedido, name='cancelar_pedido'),
+    path('editar_pedido/<int:pedido_id>/', views.editar_pedido, name='editar_pedido'),
+    path('api/pedidos/<int:pedido_id>/', views.api_pedido_detalhe, name='api_pedido_detalhe'),
 
     path('relatorios/vendas/', views.relatorio_vendas, name='relatorio_vendas'),
     path('relatorios/gerar_pdf/', views.gerar_pdf_relatorio_vendas, name='gerar_pdf_relatorio_vendas'),

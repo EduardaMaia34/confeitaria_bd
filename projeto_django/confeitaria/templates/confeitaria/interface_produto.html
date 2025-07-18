@@ -583,12 +583,7 @@
             <a href="{% url 'listar_pedidos' %}">Pedidos</a>
             <a href="{% url 'listar_cliente' %}">Clientes</a>
             <a href="{% url 'relatorio_vendas' %}">Relatórios</a>
-            <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" onclick="confirmarSaida(event)" style="background: none; border: none; padding: 0; cursor: pointer; color: inherit; text-decoration: underline;">
-                    Sair
-                </button>
-            </form>
+            <a href="{% url 'autenticar_login' %}" onclick="confirmarSaida(event)">Sair</a>
             <span class="menu-icon" onclick="toggleMenu()">☰</span>
         </div>
     </div>
@@ -1028,11 +1023,31 @@ function confirmarSaida(event) {
 }
 
     function confirmarSaida(event) {
-        event.preventDefault(); // Esta linha é CRUCIAL
-        var confirmacao = confirm("Tem certeza de que deseja sair?");
-        if (confirmacao) {
-            document.getElementById('logout-form').submit();
-        }
+        // Impede a navegação padrão do link
+        event.preventDefault();
+
+        const link = event.currentTarget; // Pega o próprio link clicado
+
+        Swal.fire({
+            title: 'Sair do Sistema',
+            html: 'Tem certeza que deseja sair do sistema? Você será desconectado da sua conta.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, sair!',
+            cancelButtonText: 'Cancelar',
+            customClass: {
+                popup: 'swal2-popup',
+                title: 'swal2-title',
+                content: 'swal2-content',
+                confirmButton: 'swal2-confirm',
+                cancelButton: 'swal2-cancel'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Se o usuário confirmar, redireciona para a URL de logout
+                window.location.href = link.href;
+            }
+        });
     }
     </script>
 </body>
